@@ -1,4 +1,4 @@
-import {defaultLighting,lightLayout} from './lighting-plan.js?v=9';
+import {defaultLighting,lightLayout} from './lighting-plan.js?v=10';
 import {defaultWaterTanks,waterTankLayout} from './water-tank-plan.js?v=7';
 export const brochure = 'https://forestriverbus.com/brochures/Starcraft-Allstar-XL-Freightliner-Brochure.pdf';
 export const viewDirections = {front:[0,0,-1],rear:[0,0,1],left:[-1,0,0],right:[1,0,0],top:[0,1,0],bottom:[0,-1,0]};

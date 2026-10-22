@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {lightProducts,lightLayout,lightEnabled,beamEndpoint,emitterPosition,radians} from './lighting-plan.js?v=9';
+import {lightProducts,lightLayout,lightEnabled,beamEndpoint,emitterPosition,radians} from './lighting-plan.js?v=10';
 
 export function buildExteriorLighting(parent,design,selectedId,review) {
   const root=new THREE.Group();root.name='exterior-lighting';parent.add(root);

@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/OrbitControls.js';
-import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=9';
-import {createDimensionOverlay} from './dimension-overlay.js?v=9';
-import {structureLayout} from './shell-structure.js?v=9';
-import {lightProducts,lightLayout,coverageReview,lightingReviewDate,emitterPosition,bodyOccluders,rayBoxDistance} from './lighting-plan.js?v=9';
-import {buildExteriorLighting} from './exterior-lighting.js?v=9';
+import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=10';
+import {createDimensionOverlay} from './dimension-overlay.js?v=10';
+import {structureLayout} from './shell-structure.js?v=10';
+import {lightProducts,lightLayout,coverageReview,lightingReviewDate,emitterPosition,bodyOccluders,rayBoxDistance} from './lighting-plan.js?v=10';
+import {buildExteriorLighting} from './exterior-lighting.js?v=10';
 import {waterTankLayout} from './water-tank-plan.js?v=7';
 import {buildInteriorWaterTanks,updateWaterTankUI} from './interior-water-tanks.js?v=7';
 

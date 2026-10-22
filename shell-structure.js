@@ -1,4 +1,4 @@
-import {derivedDimensions,doorLayout} from './model.js?v=9';
+import {derivedDimensions,doorLayout} from './model.js?v=10';
 
 export function structureLayout(dimensions) {
   const derived=derivedDimensions(dimensions);

@@ -124,13 +124,14 @@ test('upright rear bars have eight-inch housing-edge door clearance and clear po
   }
 });
 
-test('additional lower side pairs divide each body side into three equal center spacings',()=>{
+test('additional lower side pairs have equal clear housing-to-housing and end gaps',()=>{
   const dimensions=blankDesign().dimensions;
   for(const side of ['left','right']) {
     const fixtures=lightLayout(dimensions).filter(fixture=>fixture.id.startsWith(`side-${side}-fill-`));
     assert.equal(fixtures.length,2);
-    const positions=[dimensions.bodyFront,...fixtures.map(fixture=>fixture.position[2]),dimensions.length];
-    for(let index=1;index<positions.length;index++)assert.ok(Math.abs(positions[index]-positions[index-1]-(dimensions.length-dimensions.bodyFront)/3)<1e-8);
+    const bounds=fixtures.map(barHousingBounds);
+    const gaps=[bounds[0].minimum[2]-dimensions.bodyFront,bounds[1].minimum[2]-bounds[0].maximum[2],dimensions.length-bounds[1].maximum[2]];
+    for(const gap of gaps)assert.ok(Math.abs(gap-(dimensions.length-dimensions.bodyFront-2*lightProducts.side.size[0])/3)<0.05);
     for(const fixture of fixtures) {
       const bounds=barHousingBounds(fixture);
       assert.ok(bounds.minimum[1]>dimensions.tireDiameter+4);

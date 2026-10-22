@@ -58,10 +58,12 @@ export function lightLayout(dimensions) {
     for(const [end,position] of [['front',front+25],['rear',rear-25]]) add(`side-${key}-${end}`,`${sideName} side · ${end} bar`,'side',[side*(half+4),roof-4,position],sideYaw,12,'side',[[side*half,roof-4,position-9],[side*half,roof-4,position+9]],'26-inch bar starts 12 inches from the fixed passenger-body end, above the entry/window tops; 12° down.');
     const middle=(front+rear)/2;
     add(`side-${key}-middle`,`${sideName} side · center curved bar`,'curved',[side*(half+4),roof-4,middle],sideYaw,6,'side',[[side*half,roof-4,middle-20],[side*half,roof-4,middle+20]],'Centered along the fixed passenger body, above windows; 6° down.');
-    for(const fraction of [1/3,2/3]) {
-      const position=front+(rear-front)*fraction;
+    const fillWidth=lightProducts.side.size[0];
+    const fillGap=(rear-front-2*fillWidth)/3;
+    for(const index of [0,1]) {
+      const position=front+fillGap+fillWidth/2+index*(fillGap+fillWidth);
       const height=dimensions.floorHeight+11;
-      add(`side-${key}-fill-${fraction<0.5?'front':'rear'}`,`${sideName} side · ${fraction<0.5?'forward':'rearward'} lower fill bar`,'side',[side*(half+4),height,position],sideYaw,30,'side',[[side*half,height,position-9],[side*half,height,position+9]],'Added pair at one-third and two-thirds of the fixed passenger-body length: equal center-to-center and center-to-end spacing. Below windows and above the wheel envelope, 30° outward/down. This improves ground coverage but does not guarantee the strip immediately against the wall.',0,'addition');
+      add(`side-${key}-fill-${index===0?'front':'rear'}`,`${sideName} side · ${index===0?'forward':'rearward'} lower fill bar`,'side',[side*(half+4),height,position],sideYaw,30,'side',[[side*half,height,position-9],[side*half,height,position+9]],`Added pair with equal clear gaps from each fixed passenger-body end and between nominal 26-inch housings: ${fillGap.toFixed(2)} inches per gap. Below windows and above the wheel envelope, 30° outward/down. This improves ground coverage but does not guarantee the strip immediately against the wall.`,0,'addition');
     }
     for(const [end,position,endYaw] of [['front',front,180],['rear',rear,0]]) {
       const cornerX=side*(half-8);
