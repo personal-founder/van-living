@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/OrbitControls.js';
-import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=8';
-import {createDimensionOverlay} from './dimension-overlay.js?v=8';
-import {structureLayout} from './shell-structure.js?v=8';
-import {lightProducts,lightLayout,coverageReview,lightingReviewDate,emitterPosition,bodyOccluders,rayBoxDistance} from './lighting-plan.js?v=8';
-import {buildExteriorLighting} from './exterior-lighting.js?v=8';
+import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=9';
+import {createDimensionOverlay} from './dimension-overlay.js?v=9';
+import {structureLayout} from './shell-structure.js?v=9';
+import {lightProducts,lightLayout,coverageReview,lightingReviewDate,emitterPosition,bodyOccluders,rayBoxDistance} from './lighting-plan.js?v=9';
+import {buildExteriorLighting} from './exterior-lighting.js?v=9';
 import {waterTankLayout} from './water-tank-plan.js?v=7';
 import {buildInteriorWaterTanks,updateWaterTankUI} from './interior-water-tanks.js?v=7';
 
@@ -281,7 +281,8 @@ function updateLightingUI() {
     select.replaceChildren(prompt,...fixtures.map(fixture=>{const option=document.createElement('option');option.value=fixture.id;option.textContent=fixture.name;return option;}));
   }
   select.value=selectedLightId??'';
-  element('lighting-summary').textContent=`${fixtures.length} fixtures · ${lightingReview.fixtureCount} included in potential beam coverage · ${lightingReview.documentWatts.toLocaleString()} W document-nameplate sum, NOT verified draw. Document headline was 2,500 W; pack/variant conflicts prevent an electrical total. Upper corner bars face 45° diagonally outward, centers inset 8 in from both roof edges so their ends stay inside the roof outline, with 4-in vertical center stand-offs. This supersedes the original corner wording. Switch panels intentionally omitted.`;
+  element('lighting-controls').querySelector('summary').textContent=`Exterior lights · ${fixtures.length} fixtures`;
+  element('lighting-summary').textContent=`${fixtures.length} fixtures · ${lightingReview.fixtureCount} included in potential beam coverage. Original document layout: ${lightingReview.documentWatts.toLocaleString()} nominal W; requested additions: ${lightingReview.additionWatts.toLocaleString()} nominal W; combined ${lightingReview.nominalWatts.toLocaleString()} nominal W, NOT verified draw or an electrical design. Existing product/pack conflicts still apply. New: third center bar on cab roof, two upright rear-door bars with about 8-in edge clearance, exterior side-entry jamb bar, two equally spaced lower bars PER SIDE, circular lights above both doors and two downward front bumper pods. Roof corners retain their 8-in inset. No wiring or switches.`;
   const report=element('coverage-report');const list=document.createElement('ul');
   for(const ring of lightingReview.rings) {
     const item=document.createElement('li');item.textContent=`${ring.feet} ft offset: ${Object.entries(ring.zones).map(([zone,value])=>`${zone} ${value.covered}/${value.total} (${Math.round(value.covered/value.total*100)}%)`).join(' · ')}`;list.append(item);
@@ -293,7 +294,7 @@ function updateLightingUI() {
   if(!fixture)return;
   const product=lightProducts[fixture.product];element('light-title').textContent=fixture.name;
   const details=element('light-details');const facts=document.createElement('dl');
-  const rows=[['Brand',product.brand],['Product',product.name],['Price',`$${product.price.toFixed(2)} · ${product.priceBasis}`],['Price date',`${lightingReviewDate} document review; quote is not a live checkout price`],['Current price',product.currentPrice===null?'Not verified for exact linked package':`$${product.currentPrice.toFixed(2)} manufacturer snapshot ${lightingReviewDate}`],['Wattage',`${product.watts} W in document. ${product.linkedWatts}. Not measured draw.`],['Lumens',product.lumens],['Color',product.temperature],['Envelope',`${product.size.join(' × ')} in (W × H × D); schematic where noted`],['Aim',`${fixture.yaw}° yaw (0 rear / 180 front), ${fixture.pitch}° down; center ${fixture.position[1].toFixed(1)} in above ground`],['Beam',product.beam]];
+  const rows=[['Brand',product.brand],['Product',product.name],['Placement',fixture.origin==='addition'?'Additional fixture requested after document plan; reuses catalog product':'Original document layout'],['Price',`$${product.price.toFixed(2)} · ${product.priceBasis}`],['Price date',`${lightingReviewDate} document review; quote is not a live checkout price`],['Current price',product.currentPrice===null?'Not verified for exact linked package':`$${product.currentPrice.toFixed(2)} manufacturer snapshot ${lightingReviewDate}`],['Wattage',`${product.watts} W quoted for this product in document. ${product.linkedWatts}. Not measured draw.`],['Lumens',product.lumens],['Color',product.temperature],['Envelope',`${product.size.join(' × ')} in (W × H × D); schematic where noted`],['Aim',`${fixture.yaw}° yaw (0 rear / 180 front), ${fixture.pitch}° down, ${fixture.roll}° roll; center ${fixture.position[1].toFixed(1)} in above ground`],['Beam',product.beam]];
   for(const [label,value] of rows){const term=document.createElement('dt');term.textContent=label;const detail=document.createElement('dd');detail.textContent=value;facts.append(term,detail);}
   const placement=document.createElement('p');placement.textContent=fixture.note;
   const uncertainty=document.createElement('p');uncertainty.className='estimate';uncertainty.textContent=product.notes;

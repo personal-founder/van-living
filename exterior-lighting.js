@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {lightProducts,lightLayout,lightEnabled,beamEndpoint,emitterPosition} from './lighting-plan.js?v=8';
+import {lightProducts,lightLayout,lightEnabled,beamEndpoint,emitterPosition,radians} from './lighting-plan.js?v=9';
 
 export function buildExteriorLighting(parent,design,selectedId,review) {
   const root=new THREE.Group();root.name='exterior-lighting';parent.add(root);
@@ -19,6 +19,7 @@ export function buildExteriorLighting(parent,design,selectedId,review) {
     const housing=new THREE.MeshStandardMaterial({color:selected?'#c88e29':'#202b33',roughness:0.68});
     const lens=new THREE.MeshStandardMaterial({color:design.lighting.beams&&lightEnabled(fixture,design.lighting)?'#fff0a3':'#c2d9e1',emissive:design.lighting.beams&&lightEnabled(fixture,design.lighting)?'#d4a945':'#000000',emissiveIntensity:0.8,roughness:0.25});
     const lamp=new THREE.Group();lamp.position.set(...fixture.position);root.add(lamp);lamp.lookAt(new THREE.Vector3(...fixture.position).add(new THREE.Vector3(...fixture.direction)));
+    lamp.rotateZ(radians(fixture.roll));
     if(product.shape==='round') {
       const body=hardware(new THREE.CylinderGeometry(width/2,width/2,depth,20),housing,lamp,fixture.id);body.rotation.x=Math.PI/2;
       const face=hardware(new THREE.CircleGeometry(width*0.42,20),lens,lamp,fixture.id);face.position.z=depth/2+0.05;

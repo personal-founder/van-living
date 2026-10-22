@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {dimensionText,selectDimensions} from './model.js?v=8';
+import {dimensionText,selectDimensions} from './model.js?v=9';
 
 const namespace='http://www.w3.org/2000/svg';
 function svgNode(name,attributes={}) {
