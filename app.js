@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/OrbitControls.js';
+import {installCameraNavigation,resizeCameraProjection} from './camera-navigation.js?v=12';
+import {installViewerUI} from './viewer-ui.js?v=12';
 import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=11';
 import {createDimensionOverlay} from './dimension-overlay.js?v=11';
 import {structureLayout} from './shell-structure.js?v=11';
@@ -45,6 +47,7 @@ const controls=new OrbitControls(camera,renderer.domElement);
 controls.enableDamping=false;
 controls.addEventListener('change',render);
 const status=message=>{element('status').textContent=message;};
+const navigation=installCameraNavigation({workspace:viewport.parentElement,canvas:renderer.domElement,getCamera:()=>camera,getModel:()=>group,controls,onNavigate:()=>status('Arrows pan · Scroll / + / − zoom at crosshair.')});
 function render() {const grid=group.getObjectByName('ground-grid');if(grid)grid.visible=camera.position.y>=0;renderer.render(scene,camera);dimensionOverlay.draw(camera,annotations,design,viewport.clientWidth,viewport.clientHeight);updateLightTargets();}
 function updateLightTargets() {
   const container=element('light-targets');container.hidden=!design.lighting.visible;
@@ -282,7 +285,8 @@ function updateLightingUI() {
   }
   select.value=selectedLightId??'';
   element('lighting-controls').querySelector('summary').textContent=`Exterior lights · ${fixtures.length} fixtures`;
-  element('lighting-summary').textContent=`${fixtures.length} fixtures · ${lightingReview.fixtureCount} included in potential beam coverage. Original document layout: ${lightingReview.documentWatts.toLocaleString()} nominal W; requested additions: ${lightingReview.additionWatts.toLocaleString()} nominal W; combined ${lightingReview.nominalWatts.toLocaleString()} nominal W, NOT verified draw or an electrical design. Existing product/pack conflicts still apply. New: third center bar on cab roof, two upright rear-door bars with about 8-in edge clearance, exterior side-entry jamb bar, two equally spaced lower bars PER SIDE, circular lights above both doors and two downward front bumper pods. Door-adjacent bars now aim only 10° down. Six additional bottom bars: two per side wall, one front and one rear, aimed outward/down for close ground fill; wheel arches and door openings remain clear in the schematic. Ground samples still show gaps, not guaranteed continuous illumination. Roof corners retain their 8-in inset. No wiring or switches.`;
+  element('lighting-summary').textContent=`${lightingReview.fixtureCount}/${fixtures.length} lights in beam preview · nominal ratings, not verified draw.`;
+  element('lighting-notes').textContent=`${fixtures.length} fixtures · ${lightingReview.fixtureCount} included in potential beam coverage. Original document layout: ${lightingReview.documentWatts.toLocaleString()} nominal W; requested additions: ${lightingReview.additionWatts.toLocaleString()} nominal W; combined ${lightingReview.nominalWatts.toLocaleString()} nominal W, NOT verified draw or an electrical design. Existing product/pack conflicts still apply. New: third center bar on cab roof, two upright rear-door bars with about 8-in edge clearance, exterior side-entry jamb bar, two equally spaced lower bars PER SIDE, circular lights above both doors and two downward front bumper pods. Door-adjacent bars now aim only 10° down. Six additional bottom bars: two per side wall, one front and one rear, aimed outward/down for close ground fill; wheel arches and door openings remain clear in the schematic. Ground samples still show gaps, not guaranteed continuous illumination. Roof corners retain their 8-in inset. No wiring or switches.`;
   const report=element('coverage-report');const list=document.createElement('ul');
   for(const ring of lightingReview.rings) {
     const item=document.createElement('li');item.textContent=`${ring.feet} ft offset: ${Object.entries(ring.zones).map(([zone,value])=>`${zone} ${value.covered}/${value.total} (${Math.round(value.covered/value.total*100)}%)`).join(' · ')}`;list.append(item);
@@ -402,6 +406,8 @@ document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener
 element('mode-2d').addEventListener('click',()=>setView(view==='overview'?'top':view,'2d'));
 element('mode-3d').addEventListener('click',()=>setView(view,'3d'));
 element('fit').addEventListener('click',frameCamera);
+element('zoom-in').addEventListener('click',()=>navigation.zoom(0.8));
+element('zoom-out').addEventListener('click',()=>navigation.zoom(1.25));
 function download(blob,name) {const url=URL.createObjectURL(blob);const anchor=document.createElement('a');anchor.href=url;anchor.download=name;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 element('export').addEventListener('click',()=>{download(new Blob([JSON.stringify(design,null,2)],{type:'application/json'}),'van-living-empty-shell.json');status('Empty shell exported.');});
 element('image').addEventListener('click',()=>{
@@ -423,6 +429,10 @@ element('import').addEventListener('change',async event=>{
   catch(error){status(`Import failed: ${error.message}`);}finally{event.target.value='';}
 });
 element('reset').addEventListener('click',()=>{design=blankDesign();selectedLightId=null;selectedTankId=null;view='overview';mode='3d';refresh();save('Reference shell, exterior lighting and four interior water tanks restored.');});
-new ResizeObserver(frameCamera).observe(viewport);
+function resizeViewport() {
+  const width=Math.max(1,viewport.clientWidth);const height=Math.max(1,viewport.clientHeight);
+  renderer.setSize(width,height);resizeCameraProjection(perspective,orthographic,width,height);render();
+}
+installViewerUI(document);
+new ResizeObserver(resizeViewport).observe(viewport);
 refresh();status(loadMessage);
-

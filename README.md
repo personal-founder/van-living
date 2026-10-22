@@ -80,6 +80,12 @@ The furnished demo is replaced by a passenger body, roof, floor, end/side panels
 
 ## Views and controls
 
+Arrow keys pan the camera in screen directions; hold Shift for larger steps. Scroll or use + / − to zoom at the center crosshair, not the mouse pointer. The visible surface under the crosshair becomes the zoom/orbit focus; blank space keeps the current focus. Both 2D and 3D support these controls. Editing fields and browser shortcuts keep their normal keyboard behavior. Fit view restores the complete vehicle.
+
+Hide controls / Show controls collapses the left sidebar without changing model settings, camera focus or zoom. The choice is saved separately from exported designs. Sidebar sections start closed except Visibility; longer explanations remain under Notes and Reference & safety notes. Every original control remains available. Resizing or toggling the sidebar preserves the current camera view rather than refitting it.
+
+`camera-navigation.js` owns keyboard, center-ray zoom and projection resizing; `viewer-ui.js` owns sidebar presentation/preferences. Run `node --test camera-navigation.test.mjs viewer-ui.test.mjs model.test.mjs lighting.test.mjs water-tanks.test.mjs` for the published viewer. The separate local utility-room work remains unpublished.
+
 Choose Top, Bottom, Front, Rear, Left or Right in either **2D / orthographic** or **3D / perspective**. **3D overview** restores an oblique view. Drag to orbit in 3D, scroll to zoom, right-drag to pan, or use Fit view. The scene renders only when changed; pixel ratio is capped at 1.5. Visibility controls independently hide panels, cab, wheels and dimension annotations. Cutaway makes body panels transparent while preserving the shell.
 
 ### White dimension boxes
@@ -138,4 +144,3 @@ Existing version 2 shell files gain the new door and annotation defaults without
 ## Development
 
 Serve this directory over HTTP, for example `python -m http.server 8090 --bind 127.0.0.1`. Open http://127.0.0.1:8090. Direct file opening is unsupported. Run `node --test model.test.mjs`. Three.js and OrbitControls are bundled under `LICENSE-three.txt`. GitHub Pages publishes `main` at repository root with `.nojekyll`.
-
