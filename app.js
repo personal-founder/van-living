@@ -1,8 +1,12 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/OrbitControls.js';
-import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=5';
-import {createDimensionOverlay} from './dimension-overlay.js?v=5';
-import {structureLayout} from './shell-structure.js?v=5';
+import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=8';
+import {createDimensionOverlay} from './dimension-overlay.js?v=8';
+import {structureLayout} from './shell-structure.js?v=8';
+import {lightProducts,lightLayout,coverageReview,lightingReviewDate,emitterPosition,bodyOccluders,rayBoxDistance} from './lighting-plan.js?v=8';
+import {buildExteriorLighting} from './exterior-lighting.js?v=8';
+import {waterTankLayout} from './water-tank-plan.js?v=7';
+import {buildInteriorWaterTanks,updateWaterTankUI} from './interior-water-tanks.js?v=7';
 
 const element=id=>document.getElementById(id);
 const storageKey='van-living-empty-shell-v2';
@@ -16,12 +20,16 @@ try {
 const viewport=element('viewport');
 const dimensionOverlay=createDimensionOverlay(element('dimension-overlay'));
 let annotations=[];
+let selectedLightId=null;
+let selectedTankId=null;
+let lightingReview=null;
+const lightTargetButtons=new Map();
 const scene=new THREE.Scene();
 scene.background=new THREE.Color('#e6eae7');
 const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 viewport.append(renderer.domElement);
-renderer.domElement.setAttribute('aria-label','Empty shuttle body, cab and wheels');
+renderer.domElement.setAttribute('aria-label','Shuttle model with exterior lights and four interior fresh water tanks');
 scene.add(new THREE.HemisphereLight(0xffffff,0x677773,3));
 const light=new THREE.DirectionalLight(0xffffff,2.2);
 light.position.set(-250,450,-200);
@@ -37,7 +45,22 @@ const controls=new OrbitControls(camera,renderer.domElement);
 controls.enableDamping=false;
 controls.addEventListener('change',render);
 const status=message=>{element('status').textContent=message;};
-function render() {const grid=group.getObjectByName('ground-grid');if(grid)grid.visible=camera.position.y>=0;renderer.render(scene,camera);dimensionOverlay.draw(camera,annotations,design,viewport.clientWidth,viewport.clientHeight);}
+function render() {const grid=group.getObjectByName('ground-grid');if(grid)grid.visible=camera.position.y>=0;renderer.render(scene,camera);dimensionOverlay.draw(camera,annotations,design,viewport.clientWidth,viewport.clientHeight);updateLightTargets();}
+function updateLightTargets() {
+  const container=element('light-targets');container.hidden=!design.lighting.visible;
+  if(!design.lighting.visible)return;
+  const origin=camera.position.toArray();const blockers=bodyOccluders(design.dimensions);
+  for(const fixture of lightLayout(design.dimensions)) {
+    let button=lightTargetButtons.get(fixture.id);
+    if(!button) {button=document.createElement('button');button.type='button';button.setAttribute('aria-label',`Select ${fixture.name}`);button.title=fixture.name;button.addEventListener('click',()=>selectLight(fixture.id));container.append(button);lightTargetButtons.set(fixture.id,button);}
+    const position=emitterPosition(fixture);const projected=new THREE.Vector3(...position).project(camera);
+    const delta=position.map((value,index)=>value-origin[index]);const distance=Math.hypot(...delta);const direction=delta.map(value=>value/distance);
+    const blocked=!design.cutaway&&blockers.some(bounds=>rayBoxDistance(origin,direction,bounds)<distance-0.5);
+    const screenX=(projected.x+1)*viewport.clientWidth/2;const screenY=(1-projected.y)*viewport.clientHeight/2;
+    button.hidden=blocked||projected.z<-1||projected.z>1||screenX<0||screenX>viewport.clientWidth||screenY<110||screenY>viewport.clientHeight-65;
+    button.style.left=`${screenX}px`;button.style.top=`${screenY}px`;
+  }
+}
 function paint(color,opacity=1) {return new THREE.MeshStandardMaterial({color,roughness:0.82,transparent:opacity<1,opacity,depthWrite:opacity===1,side:THREE.DoubleSide});}
 function box(width,height,depth,x,y,z,color,opacity=1,outline=false,parent=group) {
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(width,height,depth),paint(color,opacity));
@@ -230,32 +253,81 @@ function rebuild() {
     if(design.visible.cab) wheelArch(side===-1?-48:34,dimensions.frontOverhang,14,dimensions.tireDiameter/2);
     if(design.visible[side===-1?'left':'right']) wheelArch(side===-1?-half:half-1.5,derived.rearAxle,1.5,dimensions.tireDiameter/2);
   }
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(600,600),paint('#dbe2dc'));ground.material.side=THREE.FrontSide;ground.rotation.x=-Math.PI/2;ground.position.set(0,0,length/2);group.add(ground);
-  const grid=new THREE.GridHelper(600,50,0x9eaea5,0xcbd4cc);grid.name='ground-grid';grid.position.set(0,0.02,length/2);group.add(grid);
+  const groundSize=design.lighting.visible&&(design.lighting.beams||design.lighting.coverage)?Math.max(600,length+design.lighting.rangeFeet*24+120):600;
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(groundSize,groundSize),paint('#dbe2dc'));ground.material.side=THREE.FrontSide;ground.rotation.x=-Math.PI/2;ground.position.set(0,0,length/2);group.add(ground);
+  const gridSpacing=design.lighting.visible&&(design.lighting.beams||design.lighting.coverage)?60:12;
+  const gridSize=Math.ceil(groundSize/gridSpacing)*gridSpacing;
+  const grid=new THREE.GridHelper(gridSize,gridSize/gridSpacing,0x9eaea5,0xcbd4cc);grid.name='ground-grid';grid.position.set(0,0.02,length/2);group.add(grid);
+  lightingReview=coverageReview(dimensions,design.lighting);
+  buildExteriorLighting(group,design,selectedLightId,lightingReview);
+  buildInteriorWaterTanks(group,design,selectedTankId);
+  updateWaterTankUI(design,selectedTankId);
+  updateLightingUI();
   annotations=dimensionSegments(design);
   render();
 }
+function updateLightingUI() {
+  const settings=design.lighting;
+  element('show-lights').checked=settings.visible;
+  element('show-beams').checked=settings.beams;
+  element('show-coverage').checked=settings.coverage;
+  element('show-beams').disabled=!settings.visible;
+  element('show-coverage').disabled=!settings.visible;
+  element('beam-range').value=String(settings.rangeFeet);
+  const fixtures=lightLayout(design.dimensions);
+  const select=element('light-select');
+  if(select.options.length!==fixtures.length+1) {
+    const prompt=document.createElement('option');prompt.value='';prompt.textContent='Click a fixture or select here';
+    select.replaceChildren(prompt,...fixtures.map(fixture=>{const option=document.createElement('option');option.value=fixture.id;option.textContent=fixture.name;return option;}));
+  }
+  select.value=selectedLightId??'';
+  element('lighting-summary').textContent=`${fixtures.length} fixtures · ${lightingReview.fixtureCount} included in potential beam coverage · ${lightingReview.documentWatts.toLocaleString()} W document-nameplate sum, NOT verified draw. Document headline was 2,500 W; pack/variant conflicts prevent an electrical total. Upper corner bars face 45° diagonally outward, centers inset 8 in from both roof edges so their ends stay inside the roof outline, with 4-in vertical center stand-offs. This supersedes the original corner wording. Switch panels intentionally omitted.`;
+  const report=element('coverage-report');const list=document.createElement('ul');
+  for(const ring of lightingReview.rings) {
+    const item=document.createElement('li');item.textContent=`${ring.feet} ft offset: ${Object.entries(ring.zones).map(([zone,value])=>`${zone} ${value.covered}/${value.total} (${Math.round(value.covered/value.total*100)}%)`).join(' · ')}`;list.append(item);
+  }
+  const explanation=document.createElement('p');explanation.textContent='Counts are ground sample points inside an assumed beam and not blocked by coarse body/cab/hood boxes. Percentages are not illuminated-area percentages, lux or safety ratings. Model uses opaque blockers even with cutaway on.';
+  report.replaceChildren(explanation,list);
+  const fixture=fixtures.find(candidate=>candidate.id===selectedLightId);
+  element('light-inspector').hidden=!fixture;
+  if(!fixture)return;
+  const product=lightProducts[fixture.product];element('light-title').textContent=fixture.name;
+  const details=element('light-details');const facts=document.createElement('dl');
+  const rows=[['Brand',product.brand],['Product',product.name],['Price',`$${product.price.toFixed(2)} · ${product.priceBasis}`],['Price date',`${lightingReviewDate} document review; quote is not a live checkout price`],['Current price',product.currentPrice===null?'Not verified for exact linked package':`$${product.currentPrice.toFixed(2)} manufacturer snapshot ${lightingReviewDate}`],['Wattage',`${product.watts} W in document. ${product.linkedWatts}. Not measured draw.`],['Lumens',product.lumens],['Color',product.temperature],['Envelope',`${product.size.join(' × ')} in (W × H × D); schematic where noted`],['Aim',`${fixture.yaw}° yaw (0 rear / 180 front), ${fixture.pitch}° down; center ${fixture.position[1].toFixed(1)} in above ground`],['Beam',product.beam]];
+  for(const [label,value] of rows){const term=document.createElement('dt');term.textContent=label;const detail=document.createElement('dd');detail.textContent=value;facts.append(term,detail);}
+  const placement=document.createElement('p');placement.textContent=fixture.note;
+  const uncertainty=document.createElement('p');uncertainty.className='estimate';uncertainty.textContent=product.notes;
+  const links=[['Product link from your document',product.url],['Checked product/specification page',product.source]].map(([title,url])=>{const anchor=document.createElement('a');anchor.textContent=title;anchor.href=url;anchor.target='_blank';anchor.rel='noopener noreferrer';return anchor;});
+  details.replaceChildren(facts,placement,uncertainty,...links);
+  element('selected-light-enabled').checked=settings.enabled[fixture.id]!==false;
+}
+function selectLight(id) {selectedLightId=lightLayout(design.dimensions).some(fixture=>fixture.id===id)?id:null;if(selectedLightId)selectedTankId=null;rebuild();}
+function selectTank(id) {selectedTankId=waterTankLayout(design.dimensions).tanks.some(tank=>tank.id===id)?id:null;if(selectedTankId)selectedLightId=null;rebuild();}
 function frameCamera() {
   const dimensions=design.dimensions;
   const aspect=viewport.clientWidth/Math.max(1,viewport.clientHeight);
   renderer.setSize(viewport.clientWidth,viewport.clientHeight);
   perspective.aspect=aspect;perspective.updateProjectionMatrix();
   const cabView=view.startsWith('cab-');
-  const target=cabView?new THREE.Vector3(0,65,dimensions.bodyFront-20):new THREE.Vector3(0,dimensions.height/2,dimensions.length/2);
+  const coverageView=view==='coverage';
+  const tankView=view==='tanks';
+  const target=tankView?new THREE.Vector3(...waterTankLayout(dimensions).center):cabView?new THREE.Vector3(0,65,dimensions.bodyFront-20):new THREE.Vector3(0,dimensions.height/2,dimensions.length/2);
   let direction;
-  if(view==='overview') direction=new THREE.Vector3(-1,0.65,-0.85).normalize();
-  else direction=new THREE.Vector3(...viewDirections[cabView?view.slice(4):view]);
+  if(tankView) direction=new THREE.Vector3(-0.8,1.25,-0.75).normalize();
+  else if(view==='overview') direction=new THREE.Vector3(-1,0.65,-0.85).normalize();
+  else direction=new THREE.Vector3(...viewDirections[coverageView?'top':cabView?view.slice(4):view]);
   camera=mode==='3d'?perspective:orthographic;
   camera.up.set(0,1,0);
-  if(['top','bottom'].includes(view)) camera.up.set(0,0,view==='top'?-1:1);
-  const radius=cabView?110:Math.sqrt(dimensions.length**2+dimensions.width**2+dimensions.height**2)/2+42;
+  if(['top','bottom','coverage'].includes(view)) camera.up.set(0,0,view==='bottom'?1:-1);
+  const previewRange=design.lighting.rangeFeet*12;
+  const radius=tankView?100:coverageView?dimensions.length/2+previewRange+60:cabView?110:Math.sqrt(dimensions.length**2+dimensions.width**2+dimensions.height**2)/2+42;
   const distance=radius/Math.sin(THREE.MathUtils.degToRad(38)/2)/Math.min(1,aspect);
   camera.position.copy(target).addScaledVector(direction,distance);
   const spanWidth=['front','rear'].includes(view)?dimensions.width+100:dimensions.length+110;
   const spanHeight=['top','bottom'].includes(view)?dimensions.length+110:dimensions.height+100;
   const horizontal=['top','bottom'].includes(view)?dimensions.width+120:spanWidth;
   const vertical=view==='overview'?dimensions.length+100:spanHeight;
-  const halfHeight=cabView?Math.max(90,120/aspect):Math.max(vertical/2,horizontal/(2*aspect));
+  const halfHeight=tankView?Math.max(80,110/aspect):coverageView?Math.max((dimensions.length+2*previewRange+60)/2,(dimensions.width+2*previewRange+60)/(2*aspect)):cabView?Math.max(90,120/aspect):Math.max(vertical/2,horizontal/(2*aspect));
   orthographic.left=-halfHeight*aspect;orthographic.right=halfHeight*aspect;orthographic.top=halfHeight;orthographic.bottom=-halfHeight;orthographic.updateProjectionMatrix();
   camera.zoom=1;camera.updateProjectionMatrix();
   controls.object=camera;controls.enableRotate=mode==='3d';controls.target.copy(target);controls.update();
@@ -302,6 +374,29 @@ element('cutaway').addEventListener('change',event=>{design.cutaway=event.target
 element('rear-door').addEventListener('change',event=>{design.doors.rear=event.target.checked;rebuild();save(design.doors.rear?'Optional rear emergency door shown; opening size is estimated.':'Standard rear egress window shown; no rear door selected.');});
 element('doors-open').addEventListener('change',event=>{design.doors.open=event.target.checked;rebuild();save('Door position saved. Dimension arrows measure the closed openings.');});
 element('dimension-mode').addEventListener('change',event=>{design.dimensionMode=event.target.value;render();save(`${design.dimensionMode==='all'?'All':'Simple'} Dimensions selected.`);});
+for(const [id,key] of [['show-lights','visible'],['show-beams','beams'],['show-coverage','coverage']]) element(id).addEventListener('change',event=>{design.lighting[key]=event.target.checked;rebuild();save('Exterior light preview saved. No electrical design added.');});
+element('beam-range').addEventListener('change',event=>{design.lighting.rangeFeet=Number(event.target.value);rebuild();frameCamera();save('Schematic beam preview range saved; not a measured light range.');});
+element('light-select').addEventListener('change',event=>selectLight(event.target.value));
+element('close-light').addEventListener('click',()=>selectLight(null));
+element('water-tank-select').addEventListener('change',event=>selectTank(event.target.value));
+element('close-tank').addEventListener('click',()=>selectTank(null));
+element('show-water-tanks').addEventListener('change',event=>{design.waterTanks.visible=event.target.checked;if(!design.waterTanks.visible)selectedTankId=null;rebuild();save('Interior water tank visibility saved.');});
+element('tank-view').addEventListener('click',()=>{design.waterTanks.visible=true;design.cutaway=true;element('cutaway').checked=true;setView('tanks','3d');save('Four interior tanks shown in cutaway · 200 US gallons total.');});
+element('selected-light-enabled').addEventListener('change',event=>{if(selectedLightId){design.lighting.enabled[selectedLightId]=event.target.checked;rebuild();save('Individual beam inclusion saved. Hardware remains mounted.');}});
+element('coverage-view').addEventListener('click',()=>{design.lighting.visible=true;design.lighting.beams=true;design.lighting.coverage=true;setView('coverage','2d');save('360° geometric coverage preview. Green = inside assumed beam; orange = gap. Not photometry.');});
+const lightRaycaster=new THREE.Raycaster();let pointerStart=null;let pointerDragged=false;
+renderer.domElement.addEventListener('pointerdown',event=>{pointerStart=[event.clientX,event.clientY];pointerDragged=false;});
+renderer.domElement.addEventListener('pointermove',event=>{if(pointerStart&&Math.hypot(event.clientX-pointerStart[0],event.clientY-pointerStart[1])>5)pointerDragged=true;});
+renderer.domElement.addEventListener('pointerup',()=>{pointerStart=null;});
+renderer.domElement.addEventListener('click',event=>{
+  if(pointerDragged||event.button!==0)return;
+  const bounds=renderer.domElement.getBoundingClientRect();lightRaycaster.setFromCamera(new THREE.Vector2((event.clientX-bounds.left)/bounds.width*2-1,-(event.clientY-bounds.top)/bounds.height*2+1),camera);
+  const hit=lightRaycaster.intersectObjects(group.children,true).find(intersection=>intersection.object.isMesh&&!intersection.object.userData.ignorePick&&intersection.object.material.opacity>=0.4);
+  if(hit?.object.userData.tankId)selectTank(hit.object.userData.tankId);
+  else {selectedTankId=null;selectLight(hit?.object.userData.lightId??null);}
+  if(selectedLightId)status('Exterior light selected. Product facts and preview inclusion are in the details panel.');
+});
+renderer.domElement.addEventListener('pointercancel',()=>{pointerStart=null;pointerDragged=true;});
 document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view,button.dataset.view==='overview'?'3d':mode)));
 element('mode-2d').addEventListener('click',()=>setView(view==='overview'?'top':view,'2d'));
 element('mode-3d').addEventListener('click',()=>setView(view,'3d'));
@@ -326,6 +421,6 @@ element('import').addEventListener('change',async event=>{
   try {const file=event.target.files[0];if(!file)return;if(file.size>100000)throw new Error('Shell file exceeds 100 KB.');design=validateDesign(upgradeDesign(JSON.parse(await file.text())));refresh();save('Imported empty shell. Previous shell replaced.');}
   catch(error){status(`Import failed: ${error.message}`);}finally{event.target.value='';}
 });
-element('reset').addEventListener('click',()=>{design=blankDesign();view='overview';mode='3d';refresh();save('Blank reference restored. No conversion components.');});
+element('reset').addEventListener('click',()=>{design=blankDesign();selectedLightId=null;selectedTankId=null;view='overview';mode='3d';refresh();save('Reference shell, exterior lighting and four interior water tanks restored.');});
 new ResizeObserver(frameCamera).observe(viewport);
 refresh();status(loadMessage);

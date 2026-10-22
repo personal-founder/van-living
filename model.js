@@ -1,3 +1,5 @@
+import {defaultLighting,lightLayout} from './lighting-plan.js?v=8';
+import {defaultWaterTanks,waterTankLayout} from './water-tank-plan.js?v=7';
 export const brochure = 'https://forestriverbus.com/brochures/Starcraft-Allstar-XL-Freightliner-Brochure.pdf';
 export const viewDirections = {front:[0,0,-1],rear:[0,0,1],left:[-1,0,0],right:[1,0,0],top:[0,1,0],bottom:[0,-1,0]};
 export const fieldDefinitions = [
@@ -11,7 +13,7 @@ export const fieldDefinitions = [
   ['firstStepHeight','Ground to first step surface',15.5,'Published'],['stepRise','Intermediate step rise',9.75,'Published; final rise closes to the floor height'],['stepTread','Step tread depth',9.75,'Published'],['stepWidth','Step tread width',35.75,'Published'],['frontBumperBottom','Ground to front bumper bottom',21,'Estimate'],['rearBumperBottom','Ground to rear bumper bottom',24,'Estimate']
 ];
 export function blankDesign() {
-  return {version:2,vehicle:'Starcraft Allstar XL Freightliner · 40 ft / wide body target',dimensions:Object.fromEntries(fieldDefinitions.map(([key,,value])=>[key,value])),visible:{roof:true,left:true,right:true,front:true,rear:true,floor:true,cab:true,wheels:true,chassis:true,dimensions:true,doors:true,windows:true},cutaway:false,items:[],doors:{rear:true,open:false},dimensionMode:'simple',dimensionGroups:{exterior:true,interior:true,cab:false,doors:true,chassis:false,windows:false}};
+  return {version:2,vehicle:'Starcraft Allstar XL Freightliner · 40 ft / wide body target',dimensions:Object.fromEntries(fieldDefinitions.map(([key,,value])=>[key,value])),visible:{roof:true,left:true,right:true,front:true,rear:true,floor:true,cab:true,wheels:true,chassis:true,dimensions:true,doors:true,windows:true},cutaway:false,items:[],doors:{rear:true,open:false},lighting:defaultLighting(),waterTanks:defaultWaterTanks(),dimensionMode:'simple',dimensionGroups:{exterior:true,interior:true,cab:false,doors:true,chassis:false,windows:false}};
 }
 export function upgradeDesign(design) {
   if(!design||design.version!==2) return design;
@@ -19,7 +21,7 @@ export function upgradeDesign(design) {
   const dimensions={...defaults.dimensions,...design.dimensions};
   if(design.dimensions?.firstStepHeight===undefined) dimensions.firstStepHeight=Math.max(defaults.dimensions.firstStepHeight,dimensions.entrySill);
   if(design.dimensions?.stepWidth===undefined) dimensions.stepWidth=Math.min(defaults.dimensions.stepWidth,dimensions.entryWidth-0.25);
-  return {...design,dimensions,visible:{...defaults.visible,...design.visible},doors:{...defaults.doors,...design.doors},dimensionMode:design.dimensionMode??defaults.dimensionMode,dimensionGroups:{...defaults.dimensionGroups,...design.dimensionGroups}};
+  return {...design,dimensions,visible:{...defaults.visible,...design.visible},doors:{...defaults.doors,...design.doors},lighting:{...defaults.lighting,...design.lighting},waterTanks:{...defaults.waterTanks,...design.waterTanks},dimensionMode:design.dimensionMode??defaults.dimensionMode,dimensionGroups:{...defaults.dimensionGroups,...design.dimensionGroups}};
 }
 export function doorLayout(dimensions) {
   return {entry:{start:dimensions.bodyFront+6,width:dimensions.entryWidth,height:dimensions.entryHeight,sill:dimensions.entrySill},driver:{start:dimensions.bodyFront-dimensions.driverDoorWidth-6,width:dimensions.driverDoorWidth,height:dimensions.driverDoorHeight,sill:dimensions.cabFloor},rear:{width:dimensions.rearDoorWidth,height:dimensions.rearDoorHeight,sill:dimensions.floorHeight}};
@@ -56,6 +58,12 @@ export function validateDesign(design) {
   if(!design.doors||typeof design.doors.rear!=='boolean'||typeof design.doors.open!=='boolean') throw new Error('Invalid door configuration.');
   if(!['simple','all'].includes(design.dimensionMode)) throw new Error('Choose Simple Dimensions or All Dimensions.');
   for(const key of Object.keys(blankDesign().dimensionGroups)) if(typeof design.dimensionGroups?.[key]!=='boolean') throw new Error(`Missing dimension category: ${key}`);
+  const lighting=design.lighting;
+  if(!lighting||['visible','beams','coverage'].some(key=>typeof lighting[key]!=='boolean')||![20,40,80].includes(lighting.rangeFeet)||!lighting.enabled||typeof lighting.enabled!=='object'||Array.isArray(lighting.enabled)) throw new Error('Invalid exterior lighting controls.');
+  const fixtureIds=new Set(lightLayout(dimensions).map(fixture=>fixture.id));
+  if(Object.entries(lighting.enabled).some(([key,value])=>!fixtureIds.has(key)||typeof value!=='boolean')) throw new Error('Invalid individual light setting.');
+  if(!design.waterTanks||typeof design.waterTanks.visible!=='boolean') throw new Error('Invalid interior water tank visibility setting.');
+  waterTankLayout(dimensions);
   return design;
 }
 export function dimensionText(inches,title,estimated=false) {

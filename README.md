@@ -1,5 +1,48 @@
 # Van Living · Empty Shuttle Shell
 
+## Interior fresh water tanks
+
+Four classAcustoms T5000-P 50-US-gallon tank bodies are now inside the reference bus, in two balanced left/right pairs ahead of the rear wheel area. Use **See inside · water tanks** for a focused cutaway. Click a tank or use the keyboard-accessible selector for its Amazon link, package price, storage capacity, dimensions and placement. The visibility toggle persists and is included in version 2 JSON exports; older exports gain the tank defaults while retaining existing shell and lighting settings.
+
+Selected product: https://www.amazon.com/dp/B0GHSZCHY2 — **Tank & 12 Volt Pump / 50 Gallon**, observed October 22, 2026 at **$257.29 each**, **$1,029.16 for four packages**, before tax/shipping. This is a dated listing snapshot, not a live price feed. Each tank body is **38.25 L × 22.25 W × 14.25 H inches** in the modeled low orientation, with manufacturer tolerance of ±0.25 inch per dimension; fittings and the included pump are outside that body envelope. Class A Customs allows rotating tanks onto different sides. The nominal 50-gallon capacity is the product rating, not a calculation from its exterior rectangular volume.
+
+The reference layout leaves a **45.5-inch center aisle** between support trays and an **8-inch gap** between each side's trays. Full base decks, cushions and side bracing illustrate support, not a fabricated or engineered installation. The four full tanks hold approximately **1,668 lb of water**, excluding tanks, mounts, pumps and the water in separate heaters. Floor load paths, anchoring, actual axle/tire capacities and usable clearances still require vehicle-specific verification. No plumbing, actual fitting positions or pump installation is drawn. Tanks must be vented and must not be pressurized, suspended from straps or loaded on top. Manufacturer guidance: https://www.classacustoms.com/Water-Tank-Helps_ep_41.html.
+
+`water-tank-plan.js` owns product data and fixed-size placement; `interior-water-tanks.js` owns rendering and inspector details; `water-tanks.css` styles the controls. Dimension edits/imports that cannot preserve the 30-inch minimum aisle, entry clearance, ceiling clearance and room ahead of the rear wheels fail explicitly instead of scaling or overlapping the purchased tanks. Run `node --test model.test.mjs lighting.test.mjs water-tanks.test.mjs`.
+
+## Exterior lighting plan
+
+The user's exterior-lighting document was read on 2026-10-22, including its embedded product hyperlinks and placement guidance. The document itself is unchanged. Only requested product/placement data is included here; no private document URL, other Drive content, wiring, switch panels, fuses or electrical routing is published.
+
+The plan adds **22 fixtures**: four 52-inch curved bars (front/rear upper and side middles), two 50.5-inch straight bars (hood and lower rear), four round hood/rear pods, four 26-inch side-end bars, four 13.5-inch roof-corner bars, and four 4-inch corner downlights. `lighting-plan.js` owns product records, stable fixture IDs, positions, aim, source confidence and geometric coverage. `exterior-lighting.js` draws hardware, backplates, pivot struts, lenses, approximate beams and ground sample dots. Brackets terminate at shell/hood/bumper surfaces; they are schematic, not confirmation that fiberglass/skin can carry a load. Actual structural backing, weather sealing, hardware ratings and door/hood service clearance need vehicle-specific verification.
+
+Placement interpretations are explicit: the rear “hood” light goes on a fixed bumper carrier below the rear-door sill; rear mid-height pods mount on the fixed rear panels six inches inboard of the body edges rather than the moving emergency-door leaf. The user's latest correction supersedes the document's corner placement: all four upper corner bars face diagonally outward at 45 degrees, with their housing midpoints inset eight inches from BOTH adjacent fixed-body roof edges. This keeps the full nominal 13.5-inch housings and their ends within the roof's plan-view outline, rather than centering them exactly on the vertex. A four-inch vertical center stand-off clears the roof; two inboard roof anchors support each angled fixture. Side end bars begin one foot from the fixed passenger-body ends. Roof corner positions use the fixed passenger body's corners, not the lower cab roof. Housing height/depth, exact bend, brackets and small-light envelopes remain schematic where not supported by a drawing. Other fixture types can extend beyond body width, and upper fixtures add height; body dimension annotations deliberately remain the original vehicle reference.
+
+Click a fixture or use **Select exterior light** for brand, document-quoted price and pack basis, separately dated manufacturer price where verified, document watts versus linked-product conflicts, product/source links, mounting-center ground height and aim. The selected fixture is gold. Individual beam inclusion, global hardware visibility, beams, ground samples and 20/40/80-foot preview range persist in version 2 JSON and local browser saves. Old shell exports migrate without adding furniture. Hiding lights hides all added mounts, beams and sample dots. This is browser-local model state, not live Google Docs synchronization.
+
+### Product reconciliation
+
+All fixtures are Nilight. Sources checked on 2026-10-22:
+
+- [52-inch 210 W curved bar](https://www.nilight.com/products/52-210w-21000lm-slim-anti-glare-drl-spot-flood-curved-led-light-bar): $179.99 manufacturer snapshot; 10-degree spot / 90-degree flood advertised. Document agrees on price/power; effective lumens are a manufacturer claim, not independently measured.
+- [50.5-inch 210 W straight bar](https://www.nilight.com/products/50inch-210w-21260lm-slim-anti-glare-drl-spot-flood-led-light-bar-14awg-dt-wire): document $189.99; manufacturer snapshot $170.99. Published 10-degree spot / 90-degree flood. The inspector retains both prices with their bases.
+- [Round pod ASIN B0BR96JWGW](https://www.amazon.com/dp/B0BR96JWGW): document $182.99 per L/R group, 80 W and 7,000 lm; current linked title is a 9-inch/120 W variant with additional conflicting table wattages. Package and exact variant are unresolved. The model uses a schematic 9-inch round envelope, keeps the document's power as a quote, and does not substitute another product's side-shooter coverage.
+- [26-inch 297 W side bar, 18005C-A](https://www.nilight.com/products/26inch-297w-29700lm-triple-row-spot-flood-led-light-bar): document and manufacturer $59.99; document rounds to 300 W. The linked ASIN is B07232Z7WC, despite old URL wording saying 15 inches.
+- [13.5-inch roof-corner bar, B0CLS2SZ8G](https://www.amazon.com/dp/B0CLS2SZ8G): document $42.99 and 80 W; linked listing says 72 W. Price pack basis and exact bracket envelope remain unconfirmed.
+- [4-inch 18 W flood pods, B01KRV3PNA](https://www.amazon.com/dp/B01KRV3PNA): document $42.99 for four, not per fixture. The [manufacturer flood-pod reference](https://www.nilight.com/products/4inch-18w-1260lm-double-row-flood-led-pods-4pcs-16awg-wire-3pin-switch) lists 1,260 lm per pod; its harness bundle differs, so its price is not substituted.
+
+Multiplying the document's fixture wattages by the interpreted counts gives **3,172 nominal W**, not the document headline's 2,500 W. This is NOT a verified current draw, circuit budget or electrical design. No shopping total is given because package bases and product variants are unresolved. Prices exclude tax, shipping and added custom mounting fabrication and are not guaranteed checkout prices.
+
+### Coverage limits and findings
+
+The 360-degree view samples flat ground on rectangular rings at 2, 5, 10, 20 and (for the 80-foot preview) 40-foot offsets around the bus. A point is green only when inside an enabled fixture's assumed rectangular angular beam and not blocked by conservative opaque body/cab/hood boxes; orange means no modeled beam. Cutaway does not disable those blockers. These are point counts, not illuminated-area percentages. The outer cutoff ring is omitted to avoid treating preview clipping as a physical lighting gap. Grid spacing is 5 feet in beam/coverage mode, 1 foot otherwise. Rays stop at the ground, coarse blockers or the selected preview distance. No IES files, intensity distribution, calibrated lux map, atmospheric effects or realistic material reflections are available; boundary surfaces do not capture every interior shadow.
+
+Only the two slim-bar types have numerically published horizontal 10/90-degree spot/flood values. Their vertical spans and numerical spans for the other products are explicitly assumed in the product records. The simulator neither scales brightness from wattage/lumens nor invents manufacturer photometry. Published far-field lux/range claims are displayed as reference text only, not used to guarantee visibility. Beam colors distinguish spot/flood components, not actual fixture colors. All beam meshes are lightweight previews, not 22 dynamic shadow-casting lights.
+
+With all 22 enabled and the default 40-foot preview, the current approximation exposes broad near-ground gaps: at a 2-foot perimeter offset, modeled-beam hits are Front 1/7, Rear 1/7, Left 5/21 and Right 5/21. At 5 feet they are 3/10, 7/10, 11/24 and 11/24 respectively. Long side middles remain the principal weakness because the roof-level side bars aim only 6–12 degrees down, whereas four corner downlights cannot provide continuous wall-adjacent coverage. Hood/cab shadowing weakens the front close zone; near the rear sill/bumper, shallow lower/rear pod aiming also leaves gaps. Ground under the bus, wheel wells, mirrors, solar/rack shadows, vegetation and door-open shadows are unverified. Dedicated low/downward mid-side and entrance/task lights, plus a downward rear task light, are candidate next changes—not silently added fixtures. Confirm with nighttime measurements before claiming complete coverage.
+
+Run `node --test model.test.mjs lighting.test.mjs` for shell and lighting checks.
+
 ## Ground datum and shell continuity
 
 Tires now contact the visible ground plane at Y = 0. The previous grid was 0.8 inches below the contact datum. The cab floor surface is corrected to its labeled height (34 inches estimated), rather than placing the two-inch floor panel above that height. The passenger floor remains at the published 44 inches.
@@ -22,7 +65,7 @@ Gallery inspection also found Ford-based buses in the page's options carousel (i
 
 Free static Three.js viewer: https://personal-founder.github.io/van-living/
 
-The furnished demo is replaced by an empty passenger body, roof, floor, end/side panels, schematic original cab and wheels. No conversion walls, storage, tanks, furniture, wiring, plumbing or solar are placed. The cab's original driver seat, dashboard and steering wheel are illustrative. A simplified walk-through connects the cab and passenger body. This is not a manufacturer CAD model or a construction drawing.
+The furnished demo is replaced by a passenger body, roof, floor, end/side panels, schematic original cab and wheels. Exterior lights and four interior fresh water tanks are included. Other conversion walls, furniture, wiring, plumbing and solar are not placed. The cab's original driver seat, dashboard and steering wheel are illustrative. A simplified walk-through connects the cab and passenger body. This is not a manufacturer CAD model or a construction drawing.
 
 ## Views and controls
 
