@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {lightProducts,lightLayout,lightEnabled,beamEndpoint,emitterPosition,radians} from './lighting-plan.js?v=10';
+import {lightProducts,lightLayout,lightEnabled,beamEndpoint,emitterPosition,radians} from './lighting-plan.js?v=11';
 
 export function buildExteriorLighting(parent,design,selectedId,review) {
   const root=new THREE.Group();root.name='exterior-lighting';parent.add(root);
@@ -35,7 +35,7 @@ export function buildExteriorLighting(parent,design,selectedId,review) {
     for(const [index,anchor] of fixture.anchors.entries()) {
       const plate=hardware(new THREE.BoxGeometry(3,0.25,3),metal,root,fixture.id);plate.position.set(...anchor);
       if(fixture.surface==='side')plate.rotation.z=Math.PI/2;
-      if(fixture.surface==='rear')plate.rotation.x=Math.PI/2;
+      if(fixture.surface==='rear'||fixture.surface==='front')plate.rotation.x=Math.PI/2;
       const pivots=(fixture.anchors.length===1?[0]:[-width*0.34,width*0.34]).map(offset=>new THREE.Vector3(offset,-height/2,-depth/2).applyQuaternion(lamp.quaternion).add(lamp.position));
       const anchorVector=new THREE.Vector3(...anchor);
       const pivot=pivots.sort((first,second)=>first.distanceToSquared(anchorVector)-second.distanceToSquared(anchorVector))[0];
@@ -62,3 +62,4 @@ export function buildExteriorLighting(parent,design,selectedId,review) {
     const points=new THREE.Points(geometry,new THREE.PointsMaterial({size:6,sizeAttenuation:false,vertexColors:true,depthWrite:false}));points.userData.ignorePick=true;root.add(points);
   }
 }
+

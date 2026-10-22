@@ -1,4 +1,4 @@
-import {derivedDimensions,doorLayout} from './model.js?v=10';
+import {derivedDimensions,doorLayout} from './model.js?v=11';
 
 export function structureLayout(dimensions) {
   const derived=derivedDimensions(dimensions);
@@ -36,3 +36,4 @@ export function structureLayout(dimensions) {
   add('cab-transition-landing','floor',36,dimensions.floorHeight-midFloor,2,-18,midFloor,dimensions.bodyFront,'#667a72');
   return {steps,wellDepth,railBottom,parts,walkThroughTop:dimensions.cabFloor+dimensions.cabHeight-2,axles:[{z:dimensions.frontOverhang,width:dimensions.frontTrack},{z:derived.rearAxle,width:dimensions.rearTrack+10}],wheelCenterHeight:dimensions.tireDiameter/2};
 }
+

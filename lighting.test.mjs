@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import {blankDesign,upgradeDesign,validateDesign} from './model.js';
 import {lightProducts,lightLayout,coverageReview,beamBasis,beamReaches,beamEndpoint,rayBoxDistance,defaultLighting,dotVector,barHousingBounds} from './lighting-plan.js';
 
-test('document plan and requested additions map to 34 unique fixtures without wiring',()=>{
+test('document plan and requested additions map to 40 unique fixtures without wiring',()=>{
   const design=blankDesign();const fixtures=lightLayout(design.dimensions);
-  assert.equal(fixtures.length,34);assert.equal(new Set(fixtures.map(fixture=>fixture.id)).size,34);
+  assert.equal(fixtures.length,40);assert.equal(new Set(fixtures.map(fixture=>fixture.id)).size,40);
   assert.equal(fixtures.filter(fixture=>fixture.origin==='document').length,22);
-  assert.equal(fixtures.filter(fixture=>fixture.origin==='addition').length,12);
-  assert.deepEqual(Object.fromEntries(Object.keys(lightProducts).map(key=>[key,fixtures.filter(fixture=>fixture.product===key).length])),{curved:4,straight:3,pod:8,side:10,corner:5,down:4});
+  assert.equal(fixtures.filter(fixture=>fixture.origin==='addition').length,18);
+  assert.deepEqual(Object.fromEntries(Object.keys(lightProducts).map(key=>[key,fixtures.filter(fixture=>fixture.product===key).length])),{curved:8,straight:5,pod:8,side:10,corner:5,down:4});
   assert.equal(coverageReview(design.dimensions,design.lighting).documentWatts,3172);
-  assert.equal(coverageReview(design.dimensions,design.lighting).additionWatts,2410);
-  assert.equal(coverageReview(design.dimensions,design.lighting).nominalWatts,5582);
+  assert.equal(coverageReview(design.dimensions,design.lighting).additionWatts,3670);
+  assert.equal(coverageReview(design.dimensions,design.lighting).nominalWatts,6842);
   assert.equal(design.items.length,0);
   for(const product of Object.values(lightProducts)){assert.ok(product.price>0);assert.match(product.url,/^https:\/\/www.amazon.com\/dp\//);assert.match(product.source,/^https:\/\//);}
 });
@@ -23,7 +23,8 @@ test('mount anchors contact roof hood fixed rear body and bumper rather than doo
       if(fixture.surface==='roof')assert.equal(anchor[1],dimensions.height);
       if(fixture.surface==='hood')assert.equal(anchor[1],dimensions.cabFloor+36);
       if(fixture.surface==='side')assert.equal(Math.abs(anchor[0]),dimensions.width/2);
-      if(fixture.surface==='rear'){assert.equal(anchor[2],dimensions.length);assert.ok(Math.abs(anchor[0])>dimensions.rearDoorWidth/2+1.5||anchor[1]>dimensions.floorHeight+dimensions.rearDoorHeight+1.5);}
+      if(fixture.surface==='rear'){assert.equal(anchor[2],dimensions.length);assert.ok(Math.abs(anchor[0])>dimensions.rearDoorWidth/2+1.5||anchor[1]>dimensions.floorHeight+dimensions.rearDoorHeight+1.5||anchor[1]+1.5<dimensions.floorHeight);}
+      if(fixture.surface==='front'){assert.equal(anchor[2],0);assert.equal(anchor[1],dimensions.frontBumperBottom+4);}
       if(fixture.surface==='bumper')assert.equal(anchor[1],dimensions.rearBumperBottom+8);
       if(fixture.surface==='front-bumper')assert.equal(anchor[1],dimensions.frontBumperBottom+8);
       if(fixture.surface==='cab-roof')assert.equal(anchor[1],dimensions.cabFloor+dimensions.cabHeight);
@@ -160,7 +161,7 @@ test('circular task lamps stay above fixed headers and bumper lamps fill front n
   assert.equal(entry.roll,90);assert.equal(entry.surface,'side');
   assert.ok(barHousingBounds(entry).minimum[2]>dimensions.bodyFront+6+dimensions.entryWidth);
   assert.ok(barHousingBounds(entry).maximum[1]<dimensions.floorHeight+dimensions.windowSill);
-  assert.ok(beamReaches(entry,[dimensions.width/2+24,0.1,entry.position[2]],480,dimensions));
+  assert.equal(entry.pitch,10);
 });
 
 test('rolled beam axes agree with physical vertical bars and additions improve coverage',()=>{
@@ -180,3 +181,68 @@ test('rolled beam axes agree with physical vertical bars and additions improve c
   assert.equal(upgraded.lighting.enabled['rear-low'],false);assert.equal(upgraded.lighting.enabled['entry-inner'],false);
   assert.deepEqual(upgraded.waterTanks,saved.waterTanks);
 });
+
+test('all door-adjacent vertical bars have only a slight ten-degree downward aim',()=>{
+  const dimensions=blankDesign().dimensions;
+  const fixtures=lightLayout(dimensions).filter(fixture=>fixture.id==='entry-inner'||fixture.id.startsWith('rear-door-vertical-'));
+  assert.equal(fixtures.length,3);
+  for(const fixture of fixtures) {
+    assert.equal(fixture.pitch,10);assert.equal(fixture.roll,90);
+    assert.ok(fixture.direction[1]<0&&fixture.direction[1]>-0.18);
+    assert.ok(Math.hypot(fixture.direction[0],fixture.direction[2])>0.98);
+  }
+});
+
+test('six bottom bars stay clear of wheel arches, entry, ground and existing fixtures',()=>{
+  for(const axleShift of [0,12]) {
+    const dimensions={...blankDesign().dimensions,wheelbase:blankDesign().dimensions.wheelbase+axleShift};
+    const fixtures=lightLayout(dimensions);const ground=fixtures.filter(fixture=>fixture.id.startsWith('ground-'));
+    assert.equal(ground.length,6);
+    const archStart=dimensions.frontOverhang+dimensions.wheelbase-dimensions.tireDiameter/2-2;
+    const archEnd=dimensions.frontOverhang+dimensions.wheelbase+dimensions.tireDiameter/2+2;
+    for(const side of ['left','right'])for(const end of ['front','rear']) {
+      const fixture=ground.find(candidate=>candidate.id===`ground-${side}-${end}`);
+      const bounds=barHousingBounds(fixture);
+      assert.equal(fixture.product,'curved');assert.equal(fixture.position[1],dimensions.floorHeight-13);
+      assert.ok(bounds.minimum[1]>dimensions.floorHeight-16&&bounds.maximum[1]<dimensions.floorHeight-2);
+      assert.ok(bounds.minimum[2]>dimensions.bodyFront+6+dimensions.entryWidth);
+      assert.ok(bounds.minimum[2]>archEnd+2||bounds.maximum[2]<archStart-2);
+      assert.ok(bounds.maximum[2]<dimensions.length-2);
+      assert.ok(side==='left'?bounds.maximum[0]<-dimensions.width/2:bounds.minimum[0]>dimensions.width/2);
+      assert.equal(fixture.anchors.length,2);
+    }
+    const front=ground.find(fixture=>fixture.id==='ground-front');const rear=ground.find(fixture=>fixture.id==='ground-rear');
+    assert.ok(barHousingBounds(front).minimum[1]>dimensions.frontBumperBottom);
+    assert.ok(barHousingBounds(rear).minimum[1]>dimensions.rearBumperBottom);
+    assert.ok(barHousingBounds(front).maximum[2]<0&&barHousingBounds(rear).minimum[2]>dimensions.length);
+    const rearExisting=barHousingBounds(fixtures.find(fixture=>fixture.id==='rear-low'));
+    assert.ok(barHousingBounds(rear).maximum[1]<rearExisting.minimum[1]);
+    assert.ok(barHousingBounds(front).maximum[1]<dimensions.frontBumperBottom+8);
+  }
+});
+
+test('bottom bars point outward and down, reach close ground and improve every near-field zone',()=>{
+  const design=blankDesign();const dimensions=design.dimensions;const fixtures=lightLayout(dimensions);
+  const ground=fixtures.filter(fixture=>fixture.id.startsWith('ground-'));
+  for(const fixture of ground) {
+    assert.equal(fixture.pitch,fixture.id==='ground-rear'?40:55);
+    assert.ok(fixture.direction[1]<-0.6&&Math.hypot(fixture.direction[0],fixture.direction[2])>0.5);
+    const point=fixture.id==='ground-front'?[0,0.1,-24]:fixture.id==='ground-rear'?[0,0.1,dimensions.length+24]:[Math.sign(fixture.position[0])*(dimensions.width/2+24),0.1,fixture.position[2]];
+    assert.ok(beamReaches(fixture,point,480,dimensions),fixture.id);
+  }
+  const before=defaultLighting();before.enabled=Object.fromEntries(ground.map(fixture=>[fixture.id,false]));
+  const previous=coverageReview(dimensions,before).rings.find(ring=>ring.feet===2);
+  const after=coverageReview(dimensions,defaultLighting()).rings.find(ring=>ring.feet===2);
+  for(const zone of ['Front','Rear','Left','Right'])assert.ok(after.zones[zone].covered>previous.zones[zone].covered,zone);
+  assert.ok(Object.values(after.zones).some(zone=>zone.covered<zone.total));
+});
+
+test('previous light choices and tanks survive migration with new ground fixtures enabled',()=>{
+  const old=blankDesign();old.lighting.enabled['rear-low']=false;old.lighting.enabled['entry-inner']=false;
+  const upgraded=validateDesign(upgradeDesign(JSON.parse(JSON.stringify(old))));
+  assert.deepEqual(upgraded.waterTanks,old.waterTanks);assert.deepEqual(upgraded.lighting.enabled,old.lighting.enabled);
+  assert.equal(coverageReview(upgraded.dimensions,upgraded.lighting).fixtureCount,38);
+  for(const fixture of lightLayout(upgraded.dimensions).filter(fixture=>fixture.id.startsWith('ground-')))upgraded.lighting.enabled[fixture.id]=false;
+  assert.equal(coverageReview(upgraded.dimensions,upgraded.lighting).fixtureCount,32);
+});
+

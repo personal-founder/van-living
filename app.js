@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/OrbitControls.js';
-import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=10';
-import {createDimensionOverlay} from './dimension-overlay.js?v=10';
-import {structureLayout} from './shell-structure.js?v=10';
-import {lightProducts,lightLayout,coverageReview,lightingReviewDate,emitterPosition,bodyOccluders,rayBoxDistance} from './lighting-plan.js?v=10';
-import {buildExteriorLighting} from './exterior-lighting.js?v=10';
+import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=11';
+import {createDimensionOverlay} from './dimension-overlay.js?v=11';
+import {structureLayout} from './shell-structure.js?v=11';
+import {lightProducts,lightLayout,coverageReview,lightingReviewDate,emitterPosition,bodyOccluders,rayBoxDistance} from './lighting-plan.js?v=11';
+import {buildExteriorLighting} from './exterior-lighting.js?v=11';
 import {waterTankLayout} from './water-tank-plan.js?v=7';
 import {buildInteriorWaterTanks,updateWaterTankUI} from './interior-water-tanks.js?v=7';
 
@@ -282,7 +282,7 @@ function updateLightingUI() {
   }
   select.value=selectedLightId??'';
   element('lighting-controls').querySelector('summary').textContent=`Exterior lights · ${fixtures.length} fixtures`;
-  element('lighting-summary').textContent=`${fixtures.length} fixtures · ${lightingReview.fixtureCount} included in potential beam coverage. Original document layout: ${lightingReview.documentWatts.toLocaleString()} nominal W; requested additions: ${lightingReview.additionWatts.toLocaleString()} nominal W; combined ${lightingReview.nominalWatts.toLocaleString()} nominal W, NOT verified draw or an electrical design. Existing product/pack conflicts still apply. New: third center bar on cab roof, two upright rear-door bars with about 8-in edge clearance, exterior side-entry jamb bar, two equally spaced lower bars PER SIDE, circular lights above both doors and two downward front bumper pods. Roof corners retain their 8-in inset. No wiring or switches.`;
+  element('lighting-summary').textContent=`${fixtures.length} fixtures · ${lightingReview.fixtureCount} included in potential beam coverage. Original document layout: ${lightingReview.documentWatts.toLocaleString()} nominal W; requested additions: ${lightingReview.additionWatts.toLocaleString()} nominal W; combined ${lightingReview.nominalWatts.toLocaleString()} nominal W, NOT verified draw or an electrical design. Existing product/pack conflicts still apply. New: third center bar on cab roof, two upright rear-door bars with about 8-in edge clearance, exterior side-entry jamb bar, two equally spaced lower bars PER SIDE, circular lights above both doors and two downward front bumper pods. Door-adjacent bars now aim only 10° down. Six additional bottom bars: two per side wall, one front and one rear, aimed outward/down for close ground fill; wheel arches and door openings remain clear in the schematic. Ground samples still show gaps, not guaranteed continuous illumination. Roof corners retain their 8-in inset. No wiring or switches.`;
   const report=element('coverage-report');const list=document.createElement('ul');
   for(const ring of lightingReview.rings) {
     const item=document.createElement('li');item.textContent=`${ring.feet} ft offset: ${Object.entries(ring.zones).map(([zone,value])=>`${zone} ${value.covered}/${value.total} (${Math.round(value.covered/value.total*100)}%)`).join(' · ')}`;list.append(item);
@@ -425,3 +425,4 @@ element('import').addEventListener('change',async event=>{
 element('reset').addEventListener('click',()=>{design=blankDesign();selectedLightId=null;selectedTankId=null;view='overview';mode='3d';refresh();save('Reference shell, exterior lighting and four interior water tanks restored.');});
 new ResizeObserver(frameCamera).observe(viewport);
 refresh();status(loadMessage);
+
