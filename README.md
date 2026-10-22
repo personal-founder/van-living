@@ -1,5 +1,15 @@
 # Van Living · Empty Shuttle Shell
 
+## Cab and glazing correction
+
+The [manufacturer gallery and feature list](https://forestriverbus.com/starcraft/allstar-xl-freightliner) and brochure show a fixed Starview transition window in front of the curbside bus entry. This is not a second truck-style passenger door. The model now cuts an actual aperture for this glass, the driver's door glass, and each passenger window, rather than placing blue rectangles over solid panels. The bus entrance has two framed glazed leaves without opaque backing. Cab close-up buttons expose both sides in either projection. Windows visibility hides glazing while retaining openings and frames.
+
+Passenger windows use the published **36 × 36 inch nominal** size. Layout is generated to fit the estimated body/entry geometry; count, gaps, sill locations and slider split are illustrative, not verified gallery measurements. Driver glass 30 × 24 inches, transition glass 24 × 60 inches, and windshield 76 inches wide with a derived sloped height are explicitly estimated. Those are schematic frame envelopes, not glass cutting sizes. Window dimensions have their own filter category. Edited nominal sizes lose their published-reference status. Old version 2 files gain the window defaults while retaining edits.
+
+**This is not a 1:1 fabrication blueprint.** Gallery photos establish arrangement and appearance, not unseen dimensions or manufacturing tolerances. A dimensioned body drawing or direct measurement is required before cutting panels, ordering glazing, or building fitted components. No model year or specific VIN is selected.
+
+Gallery inspection also found Ford-based buses in the page's options carousel (including the image labeled Allstar XL Freightliner). The Freightliner header photograph and Freightliner brochure are the exterior arrangement references; Ford cab geometry is not copied into this model. Even the header photograph is not an orthographic scale drawing and does not verify window pitch or count for this provisional dimensional target.
+
 Free static Three.js viewer: https://personal-founder.github.io/van-living/
 
 The furnished demo is replaced by an empty passenger body, roof, floor, end/side panels, schematic original cab and wheels. No conversion walls, storage, tanks, furniture, wiring, plumbing or solar are placed. The cab's original driver seat, dashboard and steering wheel are illustrative. A simplified walk-through connects the cab and passenger body. This is not a manufacturer CAD model or a construction drawing.

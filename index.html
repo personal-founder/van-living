@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Van Living · Empty Shuttle Shell</title>
-  <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?v=3">
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?v=4">
   <script type="importmap">{"imports":{"three":"./three.module.js","three/addons/":"./"}}</script>
 </head>
 <body>
@@ -13,6 +13,8 @@
       <h2>40′ wide-body shuttle</h2><p class="intro">Starcraft Allstar XL · Freightliner target configuration. No model year selected. Empty passenger compartment; original cab and wheels only.</p>
       <p class="notice">Planning reference, not a measured vehicle. Cab, interior length, wheel sizes and axle offsets are estimates. Budget, payload, roof capacity and license eligibility remain unverified for a specific bus.</p>
       <div id="summary"></div>
+      <p class="notice">Not a 1:1 blueprint. Passenger windows are published 36 × 36 in nominal units; their count, spacing and sill location are illustrative. Windshield, driver glass, transition glass, door glazing and rear glazing geometry are unmeasured estimates. Do not cut panels or order glass from this model. A body drawing or direct measurements are required.</p>
+      <details open><summary>Cab & windows</summary><div class="actions"><button data-view="cab-left">Driver door close-up</button><button data-view="cab-right">Bus entry close-up</button></div><p class="hint">Driver side: hinged door with a real glazed opening. Curbside: fixed Starview transition window ahead of the separate two-leaf bus entrance, not another cab door. Select Windows in dimension categories for nominal passenger-window sizes and estimated cab-glass sizes. The Windows visibility switch hides glazing, leaving real openings and frames.</p></details>
       <details open><summary>Dimension labels</summary><label>Dimension filter<select id="dimension-mode" aria-label="Dimension filter"><option value="simple">Simple Dimensions</option><option value="all">All Dimensions</option></select></label><div id="dimension-groups" role="group" aria-label="Dimension categories"></div><p class="hint">Simple shows one arrowed label per distinct measurement. All repeats labels along every edge/corner. Select categories to reduce clutter. Measurements parallel to the camera cannot show an arrow span; switch sides to see them. “est.” means not manufacturer-verified.</p></details>
       <details open><summary>Factory doors</summary><label class="check"><input id="rear-door" type="checkbox" checked>Optional rear emergency door</label><label class="check"><input id="doors-open" type="checkbox">Open doors</label><p class="hint">Passenger entry: standard 36-inch nominal door; clear passage is 31 inches with one rail or 30 with two. Driver door: chassis reference. Rear emergency door: optional, not guaranteed on a purchased bus. With it off, the standard rear egress window is shown. Driver/rear door sizes and entry height are estimates.</p><p class="hint"><a href="https://forestriverbus.com/starcraft/allstar-xl-freightliner" target="_blank" rel="noopener">Manufacturer door options</a></p></details>
       <details open><summary>Visibility & cutaway</summary><label class="check"><input id="cutaway" type="checkbox" checked>See inside in 3D</label><p class="hint">Cutaway fades the roof and body panels while retaining the complete shell. Turn it off for solid exterior views.</p><div id="layers"></div></details>
@@ -25,7 +27,7 @@
       <div id="viewport"></div><svg id="dimension-overlay" aria-label="Arrowed dimension labels" xmlns="http://www.w3.org/2000/svg"></svg><div class="caption">FRONT = hood · LEFT = driver side · Drag to orbit in 3D · Scroll to zoom · Right-drag to pan</div><div id="status" role="status" aria-live="polite">Loading empty vehicle shell…</div>
     </section>
   </main>
-  <script type="module" src="app.js?v=3"></script>
+  <script type="module" src="app.js?v=4"></script>
   <script>window.addEventListener('error',()=>{document.getElementById('status').textContent='Viewer error. Reload and check that WebGL is enabled.';});</script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/OrbitControls.js';
-import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=3';
-import {createDimensionOverlay} from './dimension-overlay.js?v=3';
+import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=4';
+import {createDimensionOverlay} from './dimension-overlay.js?v=4';
 
 const element=id=>document.getElementById(id);
 const storageKey='van-living-empty-shell-v2';
@@ -51,6 +51,33 @@ function wheel(x,z,width,radius) {
   const hub=new THREE.Mesh(new THREE.CylinderGeometry(radius*0.57,radius*0.57,width+0.4,16),paint('#9eaba7'));
   hub.rotation.z=Math.PI/2;hub.position.copy(tire.position);group.add(hub);
 }
+function sideFrame(x,sill,start,width,height,parent=group,slider=false) {
+  box(1.8,2,width,-0.9+x,sill,start,'#273b39',1,false,parent);
+  box(1.8,2,width,-0.9+x,sill+height-2,start,'#273b39',1,false,parent);
+  for(const location of [start,start+width-2]) box(1.8,height,2,x-0.9,sill,location,'#273b39',1,false,parent);
+  if(slider) box(2,1,width-4,x-1,sill+height*0.7,start+2,'#273b39',1,false,parent);
+  if(design.visible.windows) box(0.5,height-4,width-4,x-0.25,sill+2,start+2,'#5c8b9c',0.32,false,parent);
+}
+function passengerSide(dimensions,side,opacity) {
+  const entry=doorLayout(dimensions).entry;
+  const half=dimensions.width/2;
+  const wallX=side===-1?-half:half-derivedDimensions(dimensions).sideThickness;
+  const thickness=derivedDimensions(dimensions).sideThickness;
+  const base=dimensions.floorHeight;
+  const top=base+dimensions.interiorHeight;
+  const openings=windowLayout(dimensions).filter(window=>window.side===side);
+  if(side===1) openings.push(entry);
+  openings.sort((first,second)=>first.start-second.start);
+  let position=dimensions.bodyFront;
+  for(const opening of openings) {
+    if(opening.start>position) box(thickness,dimensions.interiorHeight,opening.start-position,wallX,base,position,'#c7d1ca',opacity,true);
+    if(opening.sill>base) box(thickness,opening.sill-base,opening.width,wallX,base,opening.start,'#c7d1ca',opacity,true);
+    box(thickness,top-opening.sill-opening.height,opening.width,wallX,opening.sill+opening.height,opening.start,'#c7d1ca',opacity,true);
+    if(opening!==entry) sideFrame(side*(half-thickness/2),opening.sill,opening.start,opening.width,opening.height,group,true);
+    position=opening.start+opening.width;
+  }
+  if(position<dimensions.length) box(thickness,dimensions.interiorHeight,dimensions.length-position,wallX,base,position,'#c7d1ca',opacity,true);
+}
 function cab(dimensions,derived,opacity) {
   const {cabWidth,cabFloor,cabHeight,bodyFront}=dimensions;
   const top=cabFloor+cabHeight;
@@ -61,7 +88,10 @@ function cab(dimensions,derived,opacity) {
     const sideProfile=profile.clone();
     if(side===-1) {
       const opening=new THREE.Path();
-      opening.moveTo(door.start,cabFloor+2);opening.lineTo(door.start,cabFloor+door.height);opening.lineTo(door.start+door.width,cabFloor+door.height);opening.lineTo(door.start+door.width,cabFloor+2);opening.closePath();sideProfile.holes.push(opening);
+      opening.moveTo(door.start,cabFloor);opening.lineTo(door.start,cabFloor+door.height);opening.lineTo(door.start+door.width,cabFloor+door.height);opening.lineTo(door.start+door.width,cabFloor);opening.closePath();sideProfile.holes.push(opening);
+    } else {
+      const opening=new THREE.Path();
+      opening.moveTo(bodyFront-28,cabFloor+6);opening.lineTo(bodyFront-28,cabFloor+66);opening.lineTo(bodyFront-4,cabFloor+66);opening.lineTo(bodyFront-4,cabFloor+6);opening.closePath();sideProfile.holes.push(opening);
     }
     const geometry=new THREE.ShapeGeometry(sideProfile);geometry.rotateY(-Math.PI/2);
     const panel=new THREE.Mesh(geometry,paint('#cbd5cf',opacity));panel.position.x=side*cabWidth/2;group.add(panel);
@@ -73,15 +103,20 @@ function cab(dimensions,derived,opacity) {
   box(80,6,4,-40,21,0,'#536965');
   box(76,18,1,-38,44,0.2,'#3c524e');
   box(11,8,1,-34,53,0,'#f3efd9');box(11,8,1,23,53,0,'#f3efd9');
-  box(0.8,25,42,cabWidth/2+0.3,cabFloor+42,derived.cabFront+21,'#658c98',0.5);
+  sideFrame(cabWidth/2,cabFloor+6,bodyFront-28,24,60);
   if(design.visible.doors) {
     const hinge=new THREE.Group();hinge.position.set(-cabWidth/2-0.7,cabFloor,door.start);hinge.rotation.y=design.doors.open?-Math.PI*0.4:0;group.add(hinge);
-    box(1.2,door.height,door.width,-0.6,0,0,'#afc3b5',0.95,true,hinge);
-    box(1.5,24,door.width-8,-0.9,40,4,'#739caa',0.7,true,hinge);
+    box(1.2,40,door.width,-0.6,0,0,'#afc3b5',1,true,hinge);
+    box(1.2,door.height-64,door.width,-0.6,64,0,'#afc3b5',1,true,hinge);
+    for(const start of [0,door.width-4]) box(1.2,24,4,-0.6,40,start,'#afc3b5',1,true,hinge);
+    sideFrame(0,40,4,door.width-8,24,hinge);
+    for(const location of [0,door.width-1]) box(1.4,door.height,1,-0.7,0,location,'#304b43',1,false,hinge);
+    for(const level of [0,door.height-1]) box(1.4,1,door.width,-0.7,level,0,'#304b43',1,false,hinge);
     box(1.8,2,7,-1.5,30,door.width-10,'#304b43',1,false,hinge);
   }
-  const windshield=new THREE.Mesh(new THREE.PlaneGeometry(cabWidth-10,Math.hypot(18,cabHeight-40)),paint('#658c98',0.5));
-  windshield.position.set(0,cabFloor+(40+cabHeight)/2,derived.cabFront+9-0.5);windshield.rotation.x=Math.atan2(18,cabHeight-40);group.add(windshield);
+  const windshield=new THREE.Mesh(new THREE.PlaneGeometry(cabWidth-10,Math.hypot(18,cabHeight-40)),paint('#658c98',0.32));
+  windshield.position.set(0,cabFloor+(40+cabHeight)/2,derived.cabFront+9-0.5);windshield.rotation.x=Math.atan2(18,cabHeight-40);if(design.visible.windows)group.add(windshield);
+  windshield.add(new THREE.LineSegments(new THREE.EdgesGeometry(windshield.geometry),new THREE.LineBasicMaterial({color:0x273b39})));
   box(cabWidth-4,2,dimensions.cabLength-4,-cabWidth/2+2,cabFloor,derived.cabFront+2,'#667a72');
   box(cabWidth-8,8,14,-cabWidth/2+4,cabFloor+24,derived.cabFront+8,'#4c635b');
   box(21,5,22,-32,cabFloor+17,bodyFront-32,'#4b615a');box(21,30,5,-32,cabFloor+20,bodyFront-12,'#4b615a');
@@ -94,8 +129,8 @@ function entryDoor(dimensions) {
   if(design.visible.doors) for(const edge of [0,1]) {
     const leaf=new THREE.Group();leaf.position.set(x,door.sill,door.start+edge*door.width);leaf.rotation.y=design.doors.open?(edge?-1:1)*Math.PI*0.4:0;group.add(leaf);
     const start=edge?-door.width/2:0;
-    box(1.3,door.height,door.width/2,-0.65,0,start,'#4c6860',1,true,leaf);
-    box(1.6,door.height-8,door.width/2-4,-0.8,4,start+2,'#80a8b1',0.72,true,leaf);
+    sideFrame(0,0,start,door.width/2,door.height,leaf);
+    box(2,2,door.width/2-4,-1,door.height*0.42,start+2,'#273b39',1,false,leaf);
   }
   for(const [index,level] of [door.sill,door.sill+9.75,door.sill+19.5].entries()) box(9.75,1.2,door.width-0.25,dimensions.width/2-(index+1)*9.75,level-1.2,door.start+0.125,'#71897c',1,true);
 }
@@ -113,10 +148,12 @@ function rearPanel(dimensions,opacity) {
   box(width,roof-sill-height,2,-width/2,sill+height,dimensions.length-2,'#c7d1ca',opacity,true);
   if(design.doors.rear&&design.visible.doors) {
     const hinge=new THREE.Group();hinge.position.set(width/2,sill,dimensions.length);hinge.rotation.y=design.doors.open?Math.PI/2:0;group.add(hinge);
-    box(width,height,1.5,-width,0,-1.5,'#b5c6b0',1,true,hinge);
-    box(width-8,26,1.8,-width+4,height-33,-1.65,'#80a8b1',0.75,true,hinge);
+    box(width,height-33,1.5,-width,0,-1.5,'#b5c6b0',1,true,hinge);
+    box(width,7,1.5,-width,height-7,-1.5,'#b5c6b0',1,true,hinge);
+    for(const location of [-width,-4]) box(4,26,1.5,location,height-33,-1.5,'#b5c6b0',1,true,hinge);
+    if(design.visible.windows) box(width-8,26,0.5,-width+4,height-33,-1,'#80a8b1',0.32,true,hinge);
     box(8,2,2,-width+4,32,-0.6,'#a4513c',1,false,hinge);
-  } else if(!design.doors.rear) box(width,height,1,-width/2,sill,dimensions.length-1,'#80a8b1',0.7,true);
+  } else if(!design.doors.rear&&design.visible.windows) box(width,height,1,-width/2,sill,dimensions.length-1,'#80a8b1',0.32,true);
 }
 function rebuild() {
   group.traverse(object=>{object.geometry?.dispose();const materials=Array.isArray(object.material)?object.material:[object.material];materials.filter(Boolean).forEach(material=>{material.map?.dispose();material.dispose();});});
@@ -137,13 +174,7 @@ function rebuild() {
   if(design.visible.roof) box(width,derived.roofThickness,bodyLength,-half,floorHeight+interiorHeight,bodyFront,'#c3cec8',opacity,true);
   for(const [side,key] of [[-1,'left'],[1,'right']]) {
     if(!design.visible[key]) continue;
-    const wallX=side===-1?-half:half-derived.sideThickness;
-    if(side===-1) box(derived.sideThickness,interiorHeight,bodyLength,wallX,floorHeight,bodyFront,'#c7d1ca',opacity,true);
-    else {
-      box(derived.sideThickness,interiorHeight,entry.start-bodyFront,wallX,floorHeight,bodyFront,'#c7d1ca',opacity,true);
-      box(derived.sideThickness,interiorHeight,length-entry.start-entry.width,wallX,floorHeight,entry.start+entry.width,'#c7d1ca',opacity,true);
-      box(derived.sideThickness,floorHeight+interiorHeight-entry.sill-entry.height,entry.width,wallX,entry.sill+entry.height,entry.start,'#c7d1ca',opacity,true);
-    }
+    passengerSide(dimensions,side,opacity);
     const skirtX=side===-1?-half:half-1;
     const archStart=derived.rearAxle-dimensions.tireDiameter/2-2;
     const archEnd=derived.rearAxle+dimensions.tireDiameter/2+2;
@@ -179,21 +210,22 @@ function frameCamera() {
   const aspect=viewport.clientWidth/Math.max(1,viewport.clientHeight);
   renderer.setSize(viewport.clientWidth,viewport.clientHeight);
   perspective.aspect=aspect;perspective.updateProjectionMatrix();
-  const target=new THREE.Vector3(0,dimensions.height/2,dimensions.length/2);
+  const cabView=view.startsWith('cab-');
+  const target=cabView?new THREE.Vector3(0,65,dimensions.bodyFront-20):new THREE.Vector3(0,dimensions.height/2,dimensions.length/2);
   let direction;
   if(view==='overview') direction=new THREE.Vector3(-1,0.65,-0.85).normalize();
-  else direction=new THREE.Vector3(...viewDirections[view]);
+  else direction=new THREE.Vector3(...viewDirections[cabView?view.slice(4):view]);
   camera=mode==='3d'?perspective:orthographic;
   camera.up.set(0,1,0);
   if(['top','bottom'].includes(view)) camera.up.set(0,0,view==='top'?-1:1);
-  const radius=Math.sqrt(dimensions.length**2+dimensions.width**2+dimensions.height**2)/2+42;
+  const radius=cabView?110:Math.sqrt(dimensions.length**2+dimensions.width**2+dimensions.height**2)/2+42;
   const distance=radius/Math.sin(THREE.MathUtils.degToRad(38)/2)/Math.min(1,aspect);
   camera.position.copy(target).addScaledVector(direction,distance);
   const spanWidth=['front','rear'].includes(view)?dimensions.width+100:dimensions.length+110;
   const spanHeight=['top','bottom'].includes(view)?dimensions.length+110:dimensions.height+100;
   const horizontal=['top','bottom'].includes(view)?dimensions.width+120:spanWidth;
   const vertical=view==='overview'?dimensions.length+100:spanHeight;
-  const halfHeight=Math.max(vertical/2,horizontal/(2*aspect));
+  const halfHeight=cabView?Math.max(90,120/aspect):Math.max(vertical/2,horizontal/(2*aspect));
   orthographic.left=-halfHeight*aspect;orthographic.right=halfHeight*aspect;orthographic.top=halfHeight;orthographic.bottom=-halfHeight;orthographic.updateProjectionMatrix();
   camera.zoom=1;camera.updateProjectionMatrix();
   controls.object=camera;controls.enableRotate=mode==='3d';controls.target.copy(target);controls.update();

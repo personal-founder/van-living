@@ -1,9 +1,30 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,dimensionText,dimensionSegments,selectDimensions,viewDirections} from './model.js';
+import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionText,dimensionSegments,selectDimensions,viewDirections} from './model.js';
 
 test('blank shell has no furnishings and survives export/import',()=>{
   const design=blankDesign();assert.equal(design.items.length,0);assert.deepEqual(validateDesign(JSON.parse(JSON.stringify(design))),design);
+});
+test('nominal passenger windows fit walls and do not intersect the bus entrance',()=>{
+  const design=blankDesign();const windows=windowLayout(design.dimensions);const entry=doorLayout(design.dimensions).entry;
+  assert.equal(windows.length,15);
+  for(const window of windows) {
+    assert.equal(window.width,36);assert.equal(window.height,36);
+    assert.ok(window.sill+window.height<design.dimensions.floorHeight+design.dimensions.interiorHeight);
+    if(window.side===1)assert.ok(window.start>entry.start+entry.width);
+  }
+  const labels=dimensionSegments(design);
+  assert.equal(labels.find(segment=>segment.key==='passenger-window-width').estimated,false);
+  assert.equal(labels.find(segment=>segment.key==='transition-glass-height').estimated,true);
+  design.dimensions.windowWidth=35;
+  assert.equal(dimensionSegments(design).find(segment=>segment.key==='passenger-window-width').estimated,true);
+  design.dimensions.windowHeight=80;assert.throws(()=>validateDesign(design));
+});
+test('old exports gain windows while retaining door settings',()=>{
+  const old=blankDesign();delete old.visible.windows;delete old.dimensionGroups.windows;
+  for(const key of ['windowWidth','windowHeight','windowSill','windowGap'])delete old.dimensions[key];
+  old.doors.open=true;
+  const upgraded=validateDesign(upgradeDesign(old));assert.equal(upgraded.visible.windows,true);assert.equal(upgraded.dimensions.windowWidth,36);assert.equal(upgraded.doors.open,true);
 });
 test('published wheelbase and clear interior fit modeled vehicle',()=>{
   const dimensions=blankDesign().dimensions;const derived=derivedDimensions(dimensions);
