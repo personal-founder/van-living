@@ -1,258 +1,204 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/OrbitControls.js';
-import { exampleDesign, validateDesign, layerNames, routeKinds, boxKeys, parsePoints } from './model.js';
+import {OrbitControls} from 'three/addons/OrbitControls.js';
+import {blankDesign,validateDesign,derivedDimensions,fieldDefinitions,formatDimension,viewDirections} from './model.js';
 
-const element = id => document.getElementById(id);
-const storageKey = 'van-living-design-v1';
-let design = exampleDesign();
-let startupMessage = 'Example design loaded. Enter your actual measurements.';
+const element=id=>document.getElementById(id);
+const storageKey='van-living-empty-shell-v2';
+let design=blankDesign();
+let loadMessage='Blank shell ready · published dimensions + labeled estimates.';
 try {
-  const saved = localStorage.getItem(storageKey);
-  if (saved) { design = validateDesign(JSON.parse(saved)); startupMessage = 'Restored your saved browser design.'; }
-} catch { startupMessage = 'Saved design unavailable. Example loaded; export to keep a backup.'; }
-let selectedId = design.items[0]?.id;
-let view = 'perspective';
-const viewport = element('viewport');
-const scene = new THREE.Scene();
-scene.background = new THREE.Color('#dce2df');
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  localStorage.removeItem('van-living-design-v1');
+  const saved=localStorage.getItem(storageKey);
+  if(saved) {design=validateDesign(JSON.parse(saved));loadMessage='Saved empty shell restored.';}
+} catch {loadMessage='Blank reference loaded · browser saving unavailable or saved file invalid.';}
+const viewport=element('viewport');
+const scene=new THREE.Scene();
+scene.background=new THREE.Color('#e6eae7');
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 viewport.append(renderer.domElement);
-renderer.domElement.setAttribute('aria-label', 'Rotatable 3D van layout');
-scene.add(new THREE.HemisphereLight(0xffffff, 0x71827c, 2.6));
-const sunlight = new THREE.DirectionalLight(0xffffff, 2);
-sunlight.position.set(100, 200, 100);
-scene.add(sunlight);
-const perspective = new THREE.PerspectiveCamera(42, 1, 0.1, 5000);
-const orthographic = new THREE.OrthographicCamera(-200, 200, 200, -200, 0.1, 5000);
-let camera = perspective;
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = false;
-controls.addEventListener('change', render);
-let geometryGroup = new THREE.Group();
-scene.add(geometryGroup);
-const selection = element('selection');
-const itemForm = element('item-form');
-const status = message => { element('status').textContent = message; };
-function render() { renderer.render(scene, camera); }
-function resize() {
-  const width = viewport.clientWidth;
-  const height = viewport.clientHeight;
-  renderer.setSize(width, height);
-  perspective.aspect = width / height;
-  perspective.updateProjectionMatrix();
-  const span = Math.max(design.shell.length, design.shell.width, design.shell.height) * 0.7;
-  const aspect = width / height;
-  orthographic.left = -span * Math.max(1, aspect);
-  orthographic.right = span * Math.max(1, aspect);
-  orthographic.top = span * Math.max(1, 1 / aspect);
-  orthographic.bottom = -span * Math.max(1, 1 / aspect);
-  orthographic.updateProjectionMatrix();
-  render();
+renderer.domElement.setAttribute('aria-label','Empty shuttle body, cab and wheels');
+scene.add(new THREE.HemisphereLight(0xffffff,0x677773,3));
+const light=new THREE.DirectionalLight(0xffffff,2.2);
+light.position.set(-250,450,-200);
+scene.add(light);
+const perspective=new THREE.PerspectiveCamera(38,1,0.1,6000);
+const orthographic=new THREE.OrthographicCamera(-300,300,300,-300,0.1,6000);
+let camera=perspective;
+let mode='3d';
+let view='overview';
+let group=new THREE.Group();
+scene.add(group);
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=false;
+controls.addEventListener('change',render);
+const status=message=>{element('status').textContent=message;};
+function render() {renderer.render(scene,camera);}
+function paint(color,opacity=1) {return new THREE.MeshStandardMaterial({color,roughness:0.82,transparent:opacity<1,opacity,depthWrite:opacity===1,side:THREE.DoubleSide});}
+function box(width,height,depth,x,y,z,color,opacity=1,outline=false) {
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(width,height,depth),paint(color,opacity));
+  mesh.position.set(x+width/2,y+height/2,z+depth/2);
+  group.add(mesh);
+  if(outline) mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color:0x7b908b,transparent:true,opacity:0.6})));
+  return mesh;
 }
-function setView(nextView) {
-  view = nextView;
-  camera = view === 'perspective' ? perspective : orthographic;
-  controls.object = camera;
-  controls.enableRotate = view === 'perspective';
-  const {width, height, length} = design.shell;
-  const center = new THREE.Vector3(width / 2, height / 2, length / 2);
-  const distance = Math.max(width, height, length) * 2.1;
-  camera.up.set(0, 1, 0);
-  const offsets = {perspective:[1, 0.75, 1], top:[0, 1, 0], side:[1, 0, 0], rear:[0, 0, -1]};
-  if (view === 'top') camera.up.set(0, 0, 1);
-  camera.position.copy(center).add(new THREE.Vector3(...offsets[view]).multiplyScalar(distance));
-  camera.zoom = 1;
-  camera.updateProjectionMatrix();
-  controls.target.copy(center);
-  controls.update();
-  document.querySelectorAll('[data-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.view === view)));
-  resize();
+function label(text,position,width=145) {
+  const canvas=document.createElement('canvas');
+  canvas.width=768;canvas.height=88;
+  const context=canvas.getContext('2d');
+  context.fillStyle='rgba(244,247,243,.94)';context.fillRect(0,0,canvas.width,canvas.height);
+  context.fillStyle='#253d3b';context.font='600 44px system-ui';context.textAlign='center';context.textBaseline='middle';context.fillText(text,384,44,748);
+  const texture=new THREE.CanvasTexture(canvas);
+  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,depthTest:false,transparent:true}));
+  sprite.position.set(...position);sprite.scale.set(width,width*88/768,1);sprite.renderOrder=10;group.add(sprite);
 }
-function material(color) { return new THREE.MeshStandardMaterial({color, roughness:0.85}); }
-function addBox(width, height, depth, x, y, z, color, id) {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material(color));
-  mesh.position.set(x + width / 2, y + height / 2, z + depth / 2);
-  mesh.userData.itemId = id;
-  geometryGroup.add(mesh);
-  if (id && id === selectedId) {
-    const outline = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), new THREE.LineBasicMaterial({color:0x372304}));
-    mesh.add(outline);
-  }
+function dimension(start,end,text,position) {
+  const geometry=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...start),new THREE.Vector3(...end)]);
+  group.add(new THREE.Line(geometry,new THREE.LineBasicMaterial({color:0x527a71,depthTest:false})));
+  label(text,position);
+}
+function wheel(x,z,width,radius) {
+  const tire=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,width,20),paint('#273333'));
+  tire.rotation.z=Math.PI/2;tire.position.set(x,radius,z);group.add(tire);
+  const hub=new THREE.Mesh(new THREE.CylinderGeometry(radius*0.57,radius*0.57,width+0.4,16),paint('#9eaba7'));
+  hub.rotation.z=Math.PI/2;hub.position.copy(tire.position);group.add(hub);
+}
+function cab(dimensions,derived,opacity) {
+  const {cabWidth,cabFloor,cabHeight,bodyFront}=dimensions;
+  const top=cabFloor+cabHeight;
+  const profile=new THREE.Shape();
+  profile.moveTo(derived.cabFront,cabFloor);profile.lineTo(bodyFront,cabFloor);profile.lineTo(bodyFront,top);profile.lineTo(derived.cabFront+18,top);profile.lineTo(derived.cabFront,cabFloor+40);profile.closePath();
+  const geometry=new THREE.ExtrudeGeometry(profile,{depth:cabWidth,bevelEnabled:false});
+  geometry.rotateY(-Math.PI/2);
+  const enclosure=new THREE.Mesh(geometry,paint('#cbd5cf',opacity));
+  enclosure.position.x=cabWidth/2;group.add(enclosure);
+  box(70,36,derived.cabFront,-35,cabFloor-3,0,'#aebeb7',1,true);
+  box(72,3,derived.cabFront,-36,cabFloor+33,0,'#d3dcd5');
+  box(80,6,4,-40,21,0,'#536965');
+  box(76,18,1,-38,44,-0.6,'#3c524e');
+  box(11,8,1,-34,53,-1.2,'#f3efd9');box(11,8,1,23,53,-1.2,'#f3efd9');
+  for(const side of [-1,1]) box(0.8,25,42,side*(cabWidth/2+0.3),cabFloor+42,derived.cabFront+21,'#658c98',0.5);
+  const windshield=new THREE.Mesh(new THREE.PlaneGeometry(cabWidth-10,Math.hypot(18,cabHeight-40)),paint('#658c98',0.5));
+  windshield.position.set(0,cabFloor+(40+cabHeight)/2,derived.cabFront+9-0.5);windshield.rotation.x=Math.atan2(18,cabHeight-40);group.add(windshield);
+  box(cabWidth-4,2,dimensions.cabLength-4,-cabWidth/2+2,cabFloor,derived.cabFront+2,'#667a72');
+  box(cabWidth-8,8,14,-cabWidth/2+4,cabFloor+24,derived.cabFront+8,'#4c635b');
+  box(21,5,22,-32,cabFloor+17,bodyFront-32,'#4b615a');box(21,30,5,-32,cabFloor+20,bodyFront-12,'#4b615a');
+  const steering=new THREE.Mesh(new THREE.TorusGeometry(7,0.8,6,20),paint('#30453f'));
+  steering.position.set(-22,cabFloor+35,derived.cabFront+29);steering.rotation.x=-0.5;group.add(steering);
 }
 function rebuild() {
-  geometryGroup.traverse(object => { object.geometry?.dispose(); if (object.material) object.material.dispose(); });
-  scene.remove(geometryGroup);
-  geometryGroup = new THREE.Group();
-  scene.add(geometryGroup);
-  const {width, height, length} = design.shell;
-  if (design.visible.floor) addBox(width, 1, length, 0, -1, 0, '#aeb9ad');
-  let offset = 0;
-  for (const [key, color] of [['lining','#ddcaaa'],['insulation','#e8bd71'],['skin','#7c9297']]) {
-    const thickness = design.walls[key];
-    if (design.visible[key]) {
-      addBox(thickness, height, length, -offset - thickness, 0, 0, color);
-      addBox(thickness, height, length, width + offset, 0, 0, color);
-    }
-    offset += thickness;
+  group.traverse(object=>{object.geometry?.dispose();const materials=Array.isArray(object.material)?object.material:[object.material];materials.filter(Boolean).forEach(material=>{material.map?.dispose();material.dispose();});});
+  scene.remove(group);group=new THREE.Group();scene.add(group);
+  const dimensions=design.dimensions;
+  const derived=derivedDimensions(dimensions);
+  const {length,width,height,floorHeight,interiorHeight,bodyFront}=dimensions;
+  const bodyLength=length-bodyFront;
+  const half=width/2;
+  const opacity=design.cutaway?0.13:1;
+  if(design.visible.floor) box(width,2,bodyLength,-half,floorHeight-2,bodyFront,'#9caaa2',1,true);
+  if(design.visible.roof) box(width,derived.roofThickness,bodyLength,-half,floorHeight+interiorHeight,bodyFront,'#c3cec8',opacity,true);
+  for(const [side,key] of [[-1,'left'],[1,'right']]) {
+    if(!design.visible[key]) continue;
+    const wallX=side===-1?-half:half-derived.sideThickness;
+    box(derived.sideThickness,interiorHeight,bodyLength,wallX,floorHeight,bodyFront,'#c7d1ca',opacity,true);
+    const skirtX=side===-1?-half:half-1;
+    const archStart=derived.rearAxle-dimensions.tireDiameter/2-2;
+    const archEnd=derived.rearAxle+dimensions.tireDiameter/2+2;
+    if(archStart>bodyFront) box(1,14,archStart-bodyFront,skirtX,floorHeight-16,bodyFront,'#aabbb1');
+    if(archEnd<length) box(1,14,length-archEnd,skirtX,floorHeight-16,archEnd,'#aabbb1');
   }
-  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(width, height, length)), new THREE.LineBasicMaterial({color:0x728780}));
-  edges.position.set(width / 2, height / 2, length / 2);
-  geometryGroup.add(edges);
-  const grid = new THREE.GridHelper(Math.ceil(Math.max(length, width) / 12) * 12, Math.ceil(Math.max(length, width) / 12), 0x81918b, 0xb2bdb6);
-  grid.position.set(width / 2, -1.1, length / 2);
-  geometryGroup.add(grid);
-  for (const item of design.items) {
-    if (!design.visible[item.kind]) continue;
-    if (!routeKinds.includes(item.kind)) {
-      addBox(item.width, item.height, item.depth, item.x, item.y, item.z, item.color, item.id);
-    } else {
-      for (let index = 1; index < item.points.length; index++) {
-        const start = new THREE.Vector3(...item.points[index - 1]);
-        const end = new THREE.Vector3(...item.points[index]);
-        const direction = end.clone().sub(start);
-        const mesh = new THREE.Mesh(new THREE.CylinderGeometry(item.diameter / 2, item.diameter / 2, direction.length(), 8), material(item.color));
-        mesh.position.copy(start).add(end).multiplyScalar(0.5);
-        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
-        mesh.userData.itemId = item.id;
-        geometryGroup.add(mesh);
-      }
-    }
+  if(design.visible.front) {
+    const opening=36;
+    box((width-opening)/2,interiorHeight,2,-half,floorHeight,bodyFront,'#bac9c0',opacity,true);
+    box((width-opening)/2,interiorHeight,2,opening/2,floorHeight,bodyFront,'#bac9c0',opacity,true);
+    box(opening,interiorHeight-70,2,-opening/2,floorHeight+70,bodyFront,'#bac9c0',opacity,true);
+  }
+  if(design.visible.rear) box(width,interiorHeight,2,-half,floorHeight,length-2,'#c7d1ca',opacity,true);
+  if(design.visible.cab) cab(dimensions,derived,design.cutaway?0.22:1);
+  if(design.visible.wheels) for(const side of [-1,1]) {
+    wheel(side*dimensions.frontTrack/2,dimensions.frontOverhang,12,dimensions.tireDiameter/2);
+    wheel(side*(dimensions.rearTrack/2-5),derived.rearAxle,9,dimensions.tireDiameter/2);
+    wheel(side*(dimensions.rearTrack/2+5),derived.rearAxle,9,dimensions.tireDiameter/2);
+  }
+  const grid=new THREE.GridHelper(600,50,0x9eaea5,0xcbd4cc);grid.position.set(0,-0.8,length/2);group.add(grid);
+  if(design.visible.dimensions) {
+    if(['overview','top','bottom','left','right'].includes(view)) dimension([-half-24,0,0],[-half-24,0,length],`OVERALL ${formatDimension(length)}`,[-half-36,10,length/2]);
+    if(['overview','top','bottom','front','rear'].includes(view)) dimension([-half,0,length+25],[half,0,length+25],`BODY ${width} in`,[0,12,length+38]);
+    if(['overview','front','rear','left','right'].includes(view)) dimension([half+25,0,length],[half+25,height,length],`HEIGHT ${height} in`,[half+40,height/2,length]);
+    if(['overview','left','right','bottom'].includes(view)) dimension([half+20,dimensions.tireDiameter/2,dimensions.frontOverhang],[half+20,dimensions.tireDiameter/2,derived.rearAxle],`WHEELBASE ${dimensions.wheelbase} in`,[half+40,15,(dimensions.frontOverhang+derived.rearAxle)/2]);
+    if(view==='top') label(`CLEAR ${dimensions.interiorWidth} × ${dimensions.interiorLength} in*`,[0,height+6,(bodyFront+length)/2],170);
+    label('FRONT / HOOD',[0,10,-35],90);
   }
   render();
 }
-function save(message) {
-  let result = message;
-  try { localStorage.setItem(storageKey, JSON.stringify(design)); }
-  catch { result += ' Browser save failed; export a backup.'; }
-  status(result);
+function frameCamera() {
+  const dimensions=design.dimensions;
+  const aspect=viewport.clientWidth/Math.max(1,viewport.clientHeight);
+  renderer.setSize(viewport.clientWidth,viewport.clientHeight);
+  perspective.aspect=aspect;perspective.updateProjectionMatrix();
+  const target=new THREE.Vector3(0,dimensions.height/2,dimensions.length/2);
+  let direction;
+  if(view==='overview') direction=new THREE.Vector3(-1,0.65,-0.85).normalize();
+  else direction=new THREE.Vector3(...viewDirections[view]);
+  camera=mode==='3d'?perspective:orthographic;
+  camera.up.set(0,1,0);
+  if(['top','bottom'].includes(view)) camera.up.set(0,0,view==='top'?-1:1);
+  const radius=Math.sqrt(dimensions.length**2+dimensions.width**2+dimensions.height**2)/2+42;
+  const distance=radius/Math.sin(THREE.MathUtils.degToRad(38)/2)/Math.min(1,aspect);
+  camera.position.copy(target).addScaledVector(direction,distance);
+  const spanWidth=['front','rear'].includes(view)?dimensions.width+100:dimensions.length+110;
+  const spanHeight=['top','bottom'].includes(view)?dimensions.length+110:dimensions.height+100;
+  const horizontal=['top','bottom'].includes(view)?dimensions.width+120:spanWidth;
+  const vertical=view==='overview'?dimensions.length+100:spanHeight;
+  const halfHeight=Math.max(vertical/2,horizontal/(2*aspect));
+  orthographic.left=-halfHeight*aspect;orthographic.right=halfHeight*aspect;orthographic.top=halfHeight;orthographic.bottom=-halfHeight;orthographic.updateProjectionMatrix();
+  camera.zoom=1;camera.updateProjectionMatrix();
+  controls.object=camera;controls.enableRotate=mode==='3d';controls.target.copy(target);controls.update();
+  element('mode-2d').setAttribute('aria-pressed',String(mode==='2d'));element('mode-3d').setAttribute('aria-pressed',String(mode==='3d'));
+  document.querySelectorAll('[data-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.view===view)));
+  render();
 }
-function updateEditor() {
-  const item = design.items.find(candidate => candidate.id === selectedId);
-  selection.replaceChildren(...design.items.map(candidate => new Option(candidate.name, candidate.id)));
-  selection.value = item?.id ?? '';
-  itemForm.hidden = !item;
-  if (!item) return;
-  itemForm.elements.name.value = item.name;
-  itemForm.elements.color.value = item.color;
-  const isRoute = routeKinds.includes(item.kind);
-  element('route-fields').hidden = !isRoute;
-  element('box-fields').hidden = isRoute;
-  if (isRoute) {
-    itemForm.elements.points.value = item.points.map(point => point.join(', ')).join('\n');
-    itemForm.elements.diameter.value = item.diameter;
-  } else boxKeys.forEach(key => { itemForm.elements[key].value = item[key]; });
+function setView(nextView,nextMode=mode) {view=nextView;mode=nextMode;rebuild();frameCamera();status(`${view==='overview'?'Overview':view.toUpperCase()} · ${mode==='2d'?'orthographic 2D':'perspective 3D'} · amber fields are estimates.`);}
+function save(message) {
+  try {localStorage.setItem(storageKey,JSON.stringify(design));status(message);}
+  catch {status(`${message} Export a backup; browser saving failed.`);}
 }
 function refresh() {
-  for (const key of ['length','width','height']) element('shell-form').elements.namedItem(key).value = design.shell[key];
-  for (const key of ['skin','insulation','lining']) element('wall-form').elements[key].value = design.walls[key];
-  element('layers').replaceChildren(...Object.entries(layerNames).map(([key, name]) => {
-    const label = document.createElement('label');
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = design.visible[key];
-    checkbox.addEventListener('change', () => { design.visible[key] = checkbox.checked; rebuild(); save('Layer visibility saved.'); });
-    label.append(checkbox, document.createTextNode(name));
-    return label;
+  const dimensions=design.dimensions;
+  const rows=[['Exterior',`${dimensions.length/12}′ × ${dimensions.width}″ × ${dimensions.height}″`],['Interior width',formatDimension(dimensions.interiorWidth)],['Interior height',formatDimension(dimensions.interiorHeight)],['Clear length*',formatDimension(dimensions.interiorLength)],['Wheelbase',formatDimension(dimensions.wheelbase)],['Cab L × W × H*',`${dimensions.cabLength} × ${dimensions.cabWidth} × ${dimensions.cabHeight} in`]];
+  const list=document.createElement('dl');
+  rows.forEach(([name,value])=>{const term=document.createElement('dt');term.textContent=name;const detail=document.createElement('dd');detail.textContent=value;if(name.includes('*'))detail.className='estimate';list.append(term,detail);});
+  element('summary').replaceChildren(list);
+  const note=document.createElement('p');note.className='hint estimate';note.textContent='* Estimated, not manufacturer-verified. Cab height is enclosure height above its floor; passenger floor length excludes cab/hood.';element('summary').append(note);
+  element('cutaway').checked=design.cutaway;
+  element('layers').replaceChildren(...Object.entries(design.visible).map(([key,value])=>{
+    const label=document.createElement('label');const input=document.createElement('input');input.type='checkbox';input.checked=value;
+    input.addEventListener('change',()=>{design.visible[key]=input.checked;rebuild();save('Shell visibility saved.');});label.append(input,document.createTextNode(key[0].toUpperCase()+key.slice(1)));return label;
   }));
-  updateEditor();
-  rebuild();
+  element('dimension-fields').replaceChildren(...fieldDefinitions.map(([key,name,,confidence])=>{
+    const label=document.createElement('label');label.append(document.createTextNode(name));const input=document.createElement('input');Object.assign(input,{type:'number',name:key,min:'0.01',max:'720',step:'0.01',required:true,value:dimensions[key]});
+    const note=document.createElement('small');note.textContent=confidence;if(confidence.startsWith('Estimate'))label.className='estimate';label.append(input,note);return label;
+  }));
+  rebuild();frameCamera();
 }
-for (const key of boxKeys) {
-  const label = document.createElement('label');
-  label.textContent = key.toUpperCase();
-  const input = document.createElement('input');
-  Object.assign(input, {type:'number', name:key, min:['x','y','z'].includes(key) ? '-600' : '0.125', max:'600', step:'0.125'});
-  label.append(input);
-  element('box-fields').append(label);
-}
-for (const [formId, section] of [['shell-form','shell'],['wall-form','walls']]) {
-  element(formId).addEventListener('submit', event => {
-    event.preventDefault();
-    const candidate = structuredClone(design);
-    Object.keys(candidate[section]).forEach(key => { candidate[section][key] = Number(event.target.elements.namedItem(key).value); });
-    try { design = validateDesign(candidate); refresh(); setView(view); save('Dimensions saved. Existing components retain their positions.'); }
-    catch (error) { status(error.message); }
-  });
-}
-itemForm.addEventListener('submit', event => {
-  event.preventDefault();
-  const candidate = structuredClone(design);
-  const item = candidate.items.find(candidateItem => candidateItem.id === selectedId);
-  item.name = itemForm.elements.name.value.trim();
-  item.color = itemForm.elements.color.value;
-  if (routeKinds.includes(item.kind)) {
-    item.diameter = Number(itemForm.elements.diameter.value);
-    item.points = parsePoints(itemForm.elements.points.value);
-  } else boxKeys.forEach(key => { item[key] = Number(itemForm.elements[key].value); });
-  try { design = validateDesign(candidate); refresh(); save('Component saved.'); }
-  catch (error) { status(error.message); }
+element('dimensions-form').addEventListener('submit',event=>{
+  event.preventDefault();const candidate=structuredClone(design);
+  fieldDefinitions.forEach(([key])=>{candidate.dimensions[key]=Number(event.target.elements.namedItem(key).value);});
+  try {design=validateDesign(candidate);refresh();save('Vehicle dimensions saved. Estimated geometry remains provisional.');}catch(error){status(error.message);}
 });
-selection.addEventListener('change', () => { selectedId = selection.value; updateEditor(); rebuild(); });
-element('add').addEventListener('click', () => {
-  if (design.items.length >= 300) { status('Limit: 300 components.'); return; }
-  const kind = element('new-kind').value;
-  const item = {id:crypto.randomUUID(), kind, name:`New ${layerNames[kind]}`, color:{water:'#338cce',electric:'#d99530',air:'#84978f'}[kind] ?? '#b89972'};
-  Object.assign(item, routeKinds.includes(kind) ? {diameter:kind === 'air' ? 4 : 1, points:[[12,12,12],[12,12,60]]} : {x:30,y:0,z:100,width:24,height:36,depth:kind === 'furniture' ? 24 : 1.5});
-  design.items.push(item);
-  design.visible[kind] = true;
-  selectedId = item.id;
-  refresh();
-  save('Component added. Edit dimensions and position below.');
+element('cutaway').addEventListener('change',event=>{design.cutaway=event.target.checked;rebuild();save('Cutaway setting saved.');});
+document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view,button.dataset.view==='overview'?'3d':mode)));
+element('mode-2d').addEventListener('click',()=>setView(view==='overview'?'top':view,'2d'));
+element('mode-3d').addEventListener('click',()=>setView(view,'3d'));
+element('fit').addEventListener('click',frameCamera);
+function download(blob,name) {const url=URL.createObjectURL(blob);const anchor=document.createElement('a');anchor.href=url;anchor.download=name;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+element('export').addEventListener('click',()=>{download(new Blob([JSON.stringify(design,null,2)],{type:'application/json'}),'van-living-empty-shell.json');status('Empty shell exported.');});
+element('image').addEventListener('click',()=>{render();renderer.domElement.toBlob(blob=>{if(blob)download(blob,'van-living-shell-view.png');});});
+element('import').parentElement.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();element('import').click();}});
+element('import').addEventListener('change',async event=>{
+  try {const file=event.target.files[0];if(!file)return;if(file.size>100000)throw new Error('Shell file exceeds 100 KB.');design=validateDesign(JSON.parse(await file.text()));refresh();save('Imported empty shell. Previous shell replaced.');}
+  catch(error){status(`Import failed: ${error.message}`);}finally{event.target.value='';}
 });
-element('delete').addEventListener('click', () => {
-  if (!confirm('Delete this component?')) return;
-  design.items = design.items.filter(item => item.id !== selectedId);
-  selectedId = design.items[0]?.id;
-  refresh();
-  save('Component deleted.');
-});
-function download(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-element('export').addEventListener('click', () => { download(new Blob([JSON.stringify(design, null, 2)], {type:'application/json'}), 'van-living-design.json'); status('Design exported. Share this JSON with Codex for changes.'); });
-element('image').addEventListener('click', () => { render(); renderer.domElement.toBlob(blob => { if (blob) download(blob, 'van-living-view.png'); }); });
-element('import').addEventListener('change', async event => {
-  const file = event.target.files[0];
-  try {
-    if (!file) return;
-    if (file.size > 2000000) throw new Error('Design file must be smaller than 2 MB.');
-    const candidate = validateDesign(JSON.parse(await file.text()));
-    if (!confirm('Replace your current design with this file? Export first if you need a backup.')) return;
-    design = candidate;
-    selectedId = design.items[0]?.id;
-    refresh();
-    setView('perspective');
-    save('Imported design saved in this browser.');
-  } catch (error) { status(`Import failed: ${error.message}`); }
-  finally { event.target.value = ''; }
-});
-element('reset').addEventListener('click', () => {
-  if (!confirm('Replace this design with the example? Export first to keep your work.')) return;
-  design = exampleDesign();
-  selectedId = design.items[0]?.id;
-  refresh();
-  setView('perspective');
-  save('Example restored.');
-});
-document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
-element('fit').addEventListener('click', () => setView(view));
-const raycaster = new THREE.Raycaster();
-let pointerStart;
-renderer.domElement.addEventListener('pointerdown', event => { pointerStart = [event.clientX, event.clientY]; });
-renderer.domElement.addEventListener('pointerup', event => {
-  if (!pointerStart || Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]) > 5) return;
-  const bounds = renderer.domElement.getBoundingClientRect();
-  raycaster.setFromCamera(new THREE.Vector2((event.clientX - bounds.left) / bounds.width * 2 - 1, -(event.clientY - bounds.top) / bounds.height * 2 + 1), camera);
-  const hit = raycaster.intersectObjects(geometryGroup.children).find(result => result.object.userData.itemId);
-  if (hit) { selectedId = hit.object.userData.itemId; updateEditor(); rebuild(); }
-});
-new ResizeObserver(resize).observe(viewport);
-refresh();
-setView('perspective');
-status(startupMessage);
+element('reset').addEventListener('click',()=>{design=blankDesign();view='overview';mode='3d';refresh();save('Blank reference restored. No conversion components.');});
+new ResizeObserver(frameCamera).observe(viewport);
+refresh();status(loadMessage);

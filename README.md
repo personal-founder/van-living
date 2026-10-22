@@ -1,27 +1,50 @@
-# Van Living · 3D Workshop
+# Van Living · Empty Shuttle Shell
 
-A free static Three.js layout editor for a van or shuttle-bus conversion. No account, paid API, cloud database, or build process is required. Three.js is bundled locally under its MIT license.
+Free static Three.js viewer: https://personal-founder.github.io/van-living/
 
-## Open the website
+The furnished demo is replaced by an empty passenger body, roof, floor, end/side panels, schematic original cab and wheels. No conversion walls, storage, tanks, furniture, wiring, plumbing or solar are placed. The cab's original driver seat, dashboard and steering wheel are illustrative. A simplified walk-through connects the cab and passenger body. This is not a manufacturer CAD model or a construction drawing.
 
-https://personal-founder.github.io/van-living/
+## Views and controls
 
-In repository Settings → Pages, choose **Deploy from a branch**, **main**, **/(root)**, then Save. The branch only appears after the first commit. Publication can take several minutes.
+Choose Top, Bottom, Front, Rear, Left or Right in either **2D / orthographic** or **3D / perspective**. **3D overview** restores an oblique view. Drag to orbit in 3D, scroll to zoom, right-drag to pan, or use Fit view. The scene renders only when changed; pixel ratio is capped at 1.5. Visibility controls independently hide panels, cab, wheels and dimension annotations. Cutaway makes body panels transparent while preserving the shell.
 
-## Design workflow
+All dimension inputs are inches. Left means driver side, front means hood. The model uses X across the vehicle, Y up from ground, and Z from front bumper to rear bumper. Published dimensions are reference values for the brochure configuration, not measurements of every old vehicle on that chassis. Estimated values are identified in the form and summary. Panel thicknesses are envelope offsets, not verified material assemblies. Overall height excludes any added roof equipment and width excludes mirrors.
 
-1. Enter measured clear interior dimensions in inches. The initial 216 × 84 × 78 inch shell is only an example, not a measured vehicle.
-2. Rotate, pan, zoom, or select 3D/top/side/rear views. Select components in the model or dropdown.
-3. Add and edit rectangular furniture, door panels, partitions, water pipes, wires, and ducts. Box coordinates specify the lower rear-left corner. Utility routes use a sequence of X,Y,Z points and an outside diameter. X runs across the width, Y up, Z toward the front.
-4. Set wall skin, insulation, and lining thicknesses; toggle visibility to inspect each side-wall layer. The roof and end walls are intentionally omitted for inspection.
-5. Changes save in this browser's local storage. **Export design** downloads JSON for backup and sharing. Import replaces the current design after validation and confirmation. Save image exports the current view.
+## Reference dimensions
 
-The editor renders on demand, caps pixel ratio, and uses simple geometry to limit resource use. A working WebGL browser is needed. This is a layout tool: it does not calculate structural strength, wiring sizes, plumbing performance, collisions, manufacturing drawings, or regulatory compliance. Doors are editable solid panels, with no automatic hinge or wall-cutout operations. Top/side/rear views are orthographic but screenshots are not calibrated construction drawings.
+Target family: **Starcraft Allstar XL Freightliner, 40-foot, optional 102-inch body**. No model year is selected. [Manufacturer brochure](https://forestriverbus.com/brochures/Starcraft-Allstar-XL-Freightliner-Brochure.pdf).
 
-## Work with Codex
+| Dimension | Inches | Confidence |
+| --- | ---: | --- |
+| Overall length | 480 | Published |
+| Exterior body width | 102 | Published wide option |
+| Overall height | 131 | Published |
+| Interior width | 98 | Published wide option |
+| Interior height | 79.75 | Published |
+| Floor above ground | 44 | Published |
+| Wheelbase | 291 | Published for this brochure; other configurations vary |
+| Passenger clear length | 348 | Estimated |
+| Nose to passenger body | 128 | Estimated |
+| Cab enclosure L × W × H | 72 × 86 × 74 | Estimated; excludes hood, height above cab floor |
+| Cab floor above ground | 34 | Estimated |
+| Front bumper to front axle | 46 | Estimated |
+| Tire outside diameter | 39 | Estimated |
+| Front tire / rear dual-pair center spacing | 80 / 80 | Estimated |
 
-The source repository is the shared project. Codex can edit files here when GitHub write access is authorized and available. Website deployment takes time; this is not a permanent live CAD/chat connection. In-app edits remain in your browser and are **not** automatically committed to GitHub. Export JSON and share it with Codex so both use the same design. To make a shared default, update `exampleDesign()` in `model.js` and explicitly reset the browser's stored example, or import the shared JSON.
+The shell uses 2-inch front and rear envelope panels, so clear length equals overall length minus nose-to-body distance minus 4 inches. Cab front is body-front minus cab length. Rear axle is front overhang plus wheelbase. Roof thickness is exterior height minus floor height minus clear height. These relationships are validated on import and edit. Cab trim clearances are not verified interior dimensions.
 
-## Local development
+## Weight, budget and Utah licensing
 
-Serve this folder over HTTP, for example `npx --yes http-server . -p 8086 -c-1`, then open http://127.0.0.1:8086. Opening index.html directly as a file is unsupported because ES modules require HTTP. Run model validation checks with `node --test model.test.mjs`.
+The reference brochure lists 26,000 / 30,000 lb GVWR variants and a Cummins 6.7L 240 hp engine. Prefer investigating the higher GVWR for the proposed heavy conversion, but capacity is not approved. 200 US gallons of water at approximately 8.34 lb/gal weighs 1,668 lb. With 3,000 lb utilities and 500 lb solar, the stated subtotal is 5,168 lb, before walls, empty tanks, storage contents, occupants, food, tools and other liquids. If the utility allowance already includes any of those loads, avoid counting them twice. Actual usable payload is the certified GVWR less the actual ready-to-build weight; front/rear axle and tire limits and load placement also constrain the result. Roof solar weight, mounts and dynamic loads need a body-specific structural assessment.
+
+[Utah Code 53-3-102(3), (7)(b)(iv)](https://le.utah.gov/xcode/Title53/Chapter3/C53-3-P1_1800010118000101.pdf) places qualifying personal recreational vehicles outside the CDL vehicle definition. A stripped passenger bus is not automatically an approved motorhome. [Utah DMV motorhome title/registration requirements](https://dmv.utah.gov/register/vehicles/motor-homes/) apply. Confirm classification, conversion documentation, insurance and the legal method of transporting an unconverted bus with DMV/DLD before purchase. No universal 26,000 lb RV cap is inferred from commercial CDL thresholds.
+
+Market evidence checked during this task: [seller's $17,900 Freightliner M2 shuttle](https://revelationmachinery.com/product/freightliner-m2-106-shuttle-bus-2009-commercial-shuttle-bus/) and [seller's advertised $19,900 M2 shuttle](https://www.ebay.com/itm/317540898946). These are leads for the chassis family, not a selection of model year or confirmation of the modeled 40-foot wide-body configuration, payload, mechanical condition, availability, title or roof rating. Ask prices exclude tax, fees, transport and repairs. No exact configuration meeting all requirements under $20,000 has been verified. The model is a dimensional target, not a claim that the listed buses match it.
+
+## Persistence and collaboration
+
+This version uses `van-living-empty-shell-v2`, deletes the app's old furnished-demo key, and does not load version 1 projects. Export shell downloads the current empty-shell JSON. Import validates and replaces the current shell. Restore blank reference immediately resets shell edits, as labeled in the UI. Browser saving is local and is not GitHub sync. Codex can update the source and publish through authorized GitHub access or Chrome; publication is not instant live CAD control.
+
+## Development
+
+Serve this directory over HTTP, for example `python -m http.server 8090 --bind 127.0.0.1`. Open http://127.0.0.1:8090. Direct file opening is unsupported. Run `node --test model.test.mjs`. Three.js and OrbitControls are bundled under `LICENSE-three.txt`. GitHub Pages publishes `main` at repository root with `.nojekyll`.

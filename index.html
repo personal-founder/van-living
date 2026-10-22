@@ -1,28 +1,29 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Van Living · 3D Workshop</title>
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Van Living · Empty Shuttle Shell</title>
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"./three.module.js","three/addons/":"./"}}</script>
 </head>
 <body>
-  <header><div><span class="eyebrow">VAN LIVING</span><h1>Your build, in perspective.</h1></div><div class="actions"><button id="export">Export design</button><label class="button">Import design<input id="import" type="file" accept=".json,application/json" hidden></label><button id="image">Save image</button></div></header>
+  <header><div><span class="eyebrow">VAN LIVING / VEHICLE STUDY</span><h1>A blank slate.</h1></div><div class="actions"><button id="export">Export shell</button><label class="button" tabindex="0">Import shell<input id="import" type="file" accept=".json,application/json" hidden></label><button id="image">Save image</button></div></header>
   <main>
     <aside>
-      <p class="intro">A measured space for your ideas. All dimensions are in inches.</p>
-      <details open><summary>01 / Interior dimensions</summary><form id="shell-form"><div class="fields"><label>Length<input name="length" type="number" min="24" max="600" step="0.125" required></label><label>Width<input name="width" type="number" min="24" max="144" step="0.125" required></label><label>Height<input name="height" type="number" min="24" max="144" step="0.125" required></label></div><button>Apply dimensions</button></form><p class="hint">Starter size: 18′ × 7′ × 6′6″. Replace with your measured interior.</p></details>
-      <details open><summary>02 / Visible layers</summary><div id="layers"></div></details>
-      <details open><summary>03 / Components & utilities</summary><label>Component<select id="selection"></select></label><div class="actions"><select id="new-kind" aria-label="New component type"><option value="furniture">Cabinet / furniture</option><option value="door">Door panel</option><option value="wall">Partition</option><option value="water">Water pipe route</option><option value="electric">Wire route</option><option value="air">Air duct route</option></select><button id="add">Add</button></div>
-      <form id="item-form" hidden><label>Name<input name="name" maxlength="80" required></label><div id="box-fields" class="fields"></div><div id="route-fields"><label>Route points: X, Y, Z per line<textarea name="points" rows="5" spellcheck="false"></textarea></label><label>Outside diameter<input name="diameter" type="number" min="0.125" max="24" step="0.125"></label></div><label>Color<input name="color" type="color"></label><div class="actions"><button>Apply changes</button><button id="delete" type="button" class="danger">Delete</button></div></form><p class="hint">Origin: rear-left floor. X across width, Y upward, Z toward the front. Door panels and partitions are solid boxes; openings require separate wall pieces.</p></details>
-      <details><summary>04 / Wall construction</summary><form id="wall-form"><div class="fields"><label>Outer skin<input name="skin" type="number" min="0.01" max="6" step="0.01" required></label><label>Insulation<input name="insulation" type="number" min="0.01" max="6" step="0.01" required></label><label>Inner lining<input name="lining" type="number" min="0.01" max="6" step="0.01" required></label></div><button>Apply wall layers</button></form><p class="hint">Side-wall layers sit outside the clear interior width. Hide each layer to inspect the assembly.</p></details>
-      <button id="reset" class="danger">Reset to example</button><p class="hint">Changes save in this browser only. Export JSON for backup or to share with me. This is a layout model, not an engineering or code-compliance check.</p>
+      <h2>40′ wide-body shuttle</h2><p class="intro">Starcraft Allstar XL · Freightliner target configuration. No model year selected. Empty passenger compartment; original cab and wheels only.</p>
+      <p class="notice">Planning reference, not a measured vehicle. Cab, interior length, wheel sizes and axle offsets are estimates. Budget, payload, roof capacity and license eligibility remain unverified for a specific bus.</p>
+      <div id="summary"></div>
+      <details open><summary>Visibility & cutaway</summary><label class="check"><input id="cutaway" type="checkbox" checked>See inside in 3D</label><p class="hint">Cutaway fades the roof and body panels while retaining the complete shell. Turn it off for solid exterior views.</p><div id="layers"></div></details>
+      <details><summary>Dimensions · inches</summary><form id="dimensions-form"><div id="dimension-fields"></div><button>Apply dimensions</button></form><p class="hint">Published values are from one brochure configuration; they do not establish the dimensions of older buses for sale. Estimates are editable.</p></details>
+      <details><summary>Sources & weight target</summary><p class="hint">Manufacturer reference: <a href="https://forestriverbus.com/brochures/Starcraft-Allstar-XL-Freightliner-Brochure.pdf" target="_blank" rel="noopener">Allstar XL Freightliner specifications</a>. 26,000 / 30,000 lb GVWR variants; Cummins 6.7L, 240 hp in this brochure. Prefer the higher GVWR for the search, subject to an actual scale ticket and axle ratings.</p><p class="hint">200 US gal water ≈ 1,668 lb + 3,000 lb utilities + 500 lb solar = 5,168 lb before walls, storage, tanks, people and belongings. This viewer does not approve payload or roof loading.</p><p class="hint">Utah: <a href="https://le.utah.gov/xcode/Title53/Chapter3/C53-3-P1_1800010118000101.pdf" target="_blank" rel="noopener">53-3-102(7)(b)(iv)</a> exempts personal recreational vehicles from the CDL definition. Gutting alone does not establish motorhome status. <a href="https://dmv.utah.gov/register/vehicles/motor-homes/" target="_blank" rel="noopener">Utah motorhome title and registration</a> still apply; confirm conversion classification with DMV/DLD before purchase or driving it home.</p><p class="hint">The body is an envelope with simplified surfaces. Cab trim, seats, hood, tires, track, wheel arches and underside are schematic. No frame, tank, solar or utility equipment is added.</p></details>
+      <button id="reset">Restore blank reference</button><p class="hint">The old furnished demo is removed. This version uses a new browser save and never restores old furniture. Export to back up your dimensions. Import replaces this shell; Restore clears saved shell edits.</p>
     </aside>
-    <section class="workspace" aria-label="3D design workspace"><nav aria-label="Camera views"><button data-view="perspective">3D</button><button data-view="top">Top</button><button data-view="side">Side</button><button data-view="rear">Rear</button><button id="fit">Fit</button></nav><div id="viewport"></div><div class="caption">Drag to rotate · Scroll to zoom · Right-drag to pan · Click an object to edit</div><div id="status" role="status" aria-live="polite">Loading 3D viewer…</div></section>
+    <section class="workspace" aria-label="Vehicle shell workspace">
+      <nav aria-label="Quick vehicle views"><div class="actions"><button id="mode-2d" aria-pressed="false">2D / orthographic</button><button id="mode-3d" aria-pressed="true">3D / perspective</button><button id="fit">Fit view</button></div><div class="actions" id="view-buttons"><button data-view="overview">3D overview</button><button data-view="top">Top</button><button data-view="bottom">Bottom</button><button data-view="front">Front</button><button data-view="rear">Rear</button><button data-view="left">Left</button><button data-view="right">Right</button></div></nav>
+      <div id="viewport"></div><div class="caption">FRONT = hood · LEFT = driver side · Drag to orbit in 3D · Scroll to zoom · Right-drag to pan</div><div id="status" role="status" aria-live="polite">Loading empty vehicle shell…</div>
+    </section>
   </main>
   <script type="module" src="app.js"></script>
-  <script>window.addEventListener('error',()=>{document.getElementById('status').textContent='Viewer error. Reload, or check that WebGL is enabled in your browser.';});</script>
+  <script>window.addEventListener('error',()=>{document.getElementById('status').textContent='Viewer error. Reload and check that WebGL is enabled.';});</script>
 </body>
 </html>
