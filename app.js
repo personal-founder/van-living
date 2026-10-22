@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/OrbitControls.js';
-import {blankDesign,validateDesign,derivedDimensions,fieldDefinitions,formatDimension,viewDirections} from './model.js';
+import {blankDesign,validateDesign,derivedDimensions,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=2';
 
 const element=id=>document.getElementById(id);
 const storageKey='van-living-empty-shell-v2';
