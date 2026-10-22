@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/OrbitControls.js';
-import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=4';
-import {createDimensionOverlay} from './dimension-overlay.js?v=4';
+import {blankDesign,validateDesign,upgradeDesign,derivedDimensions,doorLayout,windowLayout,dimensionSegments,fieldDefinitions,formatDimension,viewDirections} from './model.js?v=5';
+import {createDimensionOverlay} from './dimension-overlay.js?v=5';
+import {structureLayout} from './shell-structure.js?v=5';
 
 const element=id=>document.getElementById(id);
 const storageKey='van-living-empty-shell-v2';
@@ -36,7 +37,7 @@ const controls=new OrbitControls(camera,renderer.domElement);
 controls.enableDamping=false;
 controls.addEventListener('change',render);
 const status=message=>{element('status').textContent=message;};
-function render() {renderer.render(scene,camera);dimensionOverlay.draw(camera,annotations,design,viewport.clientWidth,viewport.clientHeight);}
+function render() {const grid=group.getObjectByName('ground-grid');if(grid)grid.visible=camera.position.y>=0;renderer.render(scene,camera);dimensionOverlay.draw(camera,annotations,design,viewport.clientWidth,viewport.clientHeight);}
 function paint(color,opacity=1) {return new THREE.MeshStandardMaterial({color,roughness:0.82,transparent:opacity<1,opacity,depthWrite:opacity===1,side:THREE.DoubleSide});}
 function box(width,height,depth,x,y,z,color,opacity=1,outline=false,parent=group) {
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(width,height,depth),paint(color,opacity));
@@ -46,10 +47,28 @@ function box(width,height,depth,x,y,z,color,opacity=1,outline=false,parent=group
   return mesh;
 }
 function wheel(x,z,width,radius) {
-  const tire=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,width,20),paint('#273333'));
+  const tire=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,width,24),paint('#273333'));
   tire.rotation.z=Math.PI/2;tire.position.set(x,radius,z);group.add(tire);
   const hub=new THREE.Mesh(new THREE.CylinderGeometry(radius*0.57,radius*0.57,width+0.4,16),paint('#9eaba7'));
   hub.rotation.z=Math.PI/2;hub.position.copy(tire.position);group.add(hub);
+}
+function wheelArch(x,z,width,radius) {
+  const shape=new THREE.Shape();
+  shape.absarc(0,0,radius+4,0,Math.PI,false);
+  shape.lineTo(-radius-2,0);shape.absarc(0,0,radius+2,Math.PI,0,true);shape.closePath();
+  const geometry=new THREE.ExtrudeGeometry(shape,{depth:width,bevelEnabled:false,curveSegments:16});geometry.rotateY(Math.PI/2);
+  const fender=new THREE.Mesh(geometry,paint('#aabbb1'));fender.position.set(x,radius,z);group.add(fender);
+}
+function slopedCabTrim(dimensions,derived) {
+  const lower=dimensions.cabFloor+40;
+  const upper=dimensions.cabFloor+dimensions.cabHeight;
+  for(const side of [-1,1]) {
+    const outer=side*dimensions.cabWidth/2;
+    const inner=side*(dimensions.cabWidth/2-5);
+    const vertices=[outer,lower,derived.cabFront,inner,lower,derived.cabFront,inner,upper,derived.cabFront+18,outer,upper,derived.cabFront+18];
+    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setIndex([0,1,2,0,2,3]);geometry.computeVertexNormals();
+    group.add(new THREE.Mesh(geometry,paint('#cbd5cf')));
+  }
 }
 function sideFrame(x,sill,start,width,height,parent=group,slider=false) {
   box(1.8,2,width,-0.9+x,sill,start,'#273b39',1,false,parent);
@@ -100,7 +119,6 @@ function cab(dimensions,derived,opacity) {
   box(cabWidth,40,2,-cabWidth/2,cabFloor,derived.cabFront,'#cbd5cf',opacity,true);
   box(70,36,derived.cabFront-2,-35,cabFloor-3,2,'#aebeb7',1,true);
   box(72,3,derived.cabFront-2,-36,cabFloor+33,2,'#d3dcd5');
-  box(80,6,4,-40,21,0,'#536965');
   box(76,18,1,-38,44,0.2,'#3c524e');
   box(11,8,1,-34,53,0,'#f3efd9');box(11,8,1,23,53,0,'#f3efd9');
   sideFrame(cabWidth/2,cabFloor+6,bodyFront-28,24,60);
@@ -115,9 +133,10 @@ function cab(dimensions,derived,opacity) {
     box(1.8,2,7,-1.5,30,door.width-10,'#304b43',1,false,hinge);
   }
   const windshield=new THREE.Mesh(new THREE.PlaneGeometry(cabWidth-10,Math.hypot(18,cabHeight-40)),paint('#658c98',0.32));
-  windshield.position.set(0,cabFloor+(40+cabHeight)/2,derived.cabFront+9-0.5);windshield.rotation.x=Math.atan2(18,cabHeight-40);if(design.visible.windows)group.add(windshield);
+  windshield.position.set(0,cabFloor+(40+cabHeight)/2,derived.cabFront+9);windshield.rotation.x=Math.atan2(18,cabHeight-40);if(design.visible.windows)group.add(windshield);
   windshield.add(new THREE.LineSegments(new THREE.EdgesGeometry(windshield.geometry),new THREE.LineBasicMaterial({color:0x273b39})));
-  box(cabWidth-4,2,dimensions.cabLength-4,-cabWidth/2+2,cabFloor,derived.cabFront+2,'#667a72');
+  slopedCabTrim(dimensions,derived);
+  box(cabWidth,2,dimensions.cabLength,-cabWidth/2,cabFloor-2,derived.cabFront,'#667a72');
   box(cabWidth-8,8,14,-cabWidth/2+4,cabFloor+24,derived.cabFront+8,'#4c635b');
   box(21,5,22,-32,cabFloor+17,bodyFront-32,'#4b615a');box(21,30,5,-32,cabFloor+20,bodyFront-12,'#4b615a');
   const steering=new THREE.Mesh(new THREE.TorusGeometry(7,0.8,6,20),paint('#30453f'));
@@ -132,7 +151,6 @@ function entryDoor(dimensions) {
     sideFrame(0,0,start,door.width/2,door.height,leaf);
     box(2,2,door.width/2-4,-1,door.height*0.42,start+2,'#273b39',1,false,leaf);
   }
-  for(const [index,level] of [door.sill,door.sill+9.75,door.sill+19.5].entries()) box(9.75,1.2,door.width-0.25,dimensions.width/2-(index+1)*9.75,level-1.2,door.start+0.125,'#71897c',1,true);
 }
 function rearPanel(dimensions,opacity) {
   const door=doorLayout(dimensions).rear;
@@ -160,13 +178,14 @@ function rebuild() {
   scene.remove(group);group=new THREE.Group();scene.add(group);
   const dimensions=design.dimensions;
   const derived=derivedDimensions(dimensions);
+  const structure=structureLayout(dimensions);
   const {length,width,height,floorHeight,interiorHeight,bodyFront}=dimensions;
   const bodyLength=length-bodyFront;
   const entry=doorLayout(dimensions).entry;
   const half=width/2;
   const opacity=design.cutaway?0.13:1;
   if(design.visible.floor) {
-    const wellDepth=29.25;
+    const wellDepth=structure.wellDepth;
     box(width-wellDepth,2,bodyLength,-half,floorHeight-2,bodyFront,'#9caaa2',1,true);
     box(wellDepth,2,entry.start-bodyFront,half-wellDepth,floorHeight-2,bodyFront,'#9caaa2',1,true);
     box(wellDepth,2,length-entry.start-entry.width,half-wellDepth,floorHeight-2,entry.start+entry.width,'#9caaa2',1,true);
@@ -189,10 +208,13 @@ function rebuild() {
   }
   if(design.visible.front) {
     const opening=36;
-    box((width-opening)/2,interiorHeight,2,-half,floorHeight,bodyFront,'#bac9c0',opacity,true);
-    box((width-opening)/2,interiorHeight,2,opening/2,floorHeight,bodyFront,'#bac9c0',opacity,true);
-    box(opening,interiorHeight-70,2,-opening/2,floorHeight+70,bodyFront,'#bac9c0',opacity,true);
+    const base=dimensions.cabFloor;
+    const top=floorHeight+interiorHeight;
+    box((width-opening)/2,top-base,2,-half,base,bodyFront,'#bac9c0',opacity,true);
+    box((width-opening)/2,top-base,2,opening/2,base,bodyFront,'#bac9c0',opacity,true);
+    box(opening,top-structure.walkThroughTop,2,-opening/2,structure.walkThroughTop,bodyFront,'#bac9c0',opacity,true);
   }
+  for(const part of structure.parts) if(design.visible[part.layer]&&part.height>0) box(part.width,part.height,part.depth,part.x,part.y,part.z,part.color,design.cutaway&&part.layer==='front'?opacity:1,true);
   if(design.visible.rear) rearPanel(dimensions,opacity);
   if(design.visible.right) entryDoor(dimensions);
   if(design.visible.cab) cab(dimensions,derived,design.cutaway?0.22:1);
@@ -201,7 +223,15 @@ function rebuild() {
     wheel(side*(dimensions.rearTrack/2-5),derived.rearAxle,9,dimensions.tireDiameter/2);
     wheel(side*(dimensions.rearTrack/2+5),derived.rearAxle,9,dimensions.tireDiameter/2);
   }
-  const grid=new THREE.GridHelper(600,50,0x9eaea5,0xcbd4cc);grid.position.set(0,-0.8,length/2);group.add(grid);
+  if(design.visible.chassis) for(const axle of structure.axles) {
+    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(2,2,axle.width,12),paint('#35433e'));shaft.rotation.z=Math.PI/2;shaft.position.set(0,structure.wheelCenterHeight,axle.z);group.add(shaft);
+  }
+  for(const side of [-1,1]) {
+    if(design.visible.cab) wheelArch(side===-1?-48:34,dimensions.frontOverhang,14,dimensions.tireDiameter/2);
+    if(design.visible[side===-1?'left':'right']) wheelArch(side===-1?-half:half-1.5,derived.rearAxle,1.5,dimensions.tireDiameter/2);
+  }
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(600,600),paint('#dbe2dc'));ground.material.side=THREE.FrontSide;ground.rotation.x=-Math.PI/2;ground.position.set(0,0,length/2);group.add(ground);
+  const grid=new THREE.GridHelper(600,50,0x9eaea5,0xcbd4cc);grid.name='ground-grid';grid.position.set(0,0.02,length/2);group.add(grid);
   annotations=dimensionSegments(design);
   render();
 }
@@ -240,7 +270,7 @@ function save(message) {
 }
 function refresh() {
   const dimensions=design.dimensions;
-  const rows=[['Exterior',`${dimensions.length/12}′ × ${dimensions.width}″ × ${dimensions.height}″`],['Interior width',formatDimension(dimensions.interiorWidth)],['Interior height',formatDimension(dimensions.interiorHeight)],['Clear length*',formatDimension(dimensions.interiorLength)],['Wheelbase',formatDimension(dimensions.wheelbase)],['Cab L × W × H*',`${dimensions.cabLength} × ${dimensions.cabWidth} × ${dimensions.cabHeight} in`]];
+  const rows=[['Exterior',`${dimensions.length/12}′ × ${dimensions.width}″ × ${dimensions.height}″`],['Interior width',formatDimension(dimensions.interiorWidth)],['Interior height',formatDimension(dimensions.interiorHeight)],['Floor above ground',formatDimension(dimensions.floorHeight)],['First step above ground',formatDimension(dimensions.firstStepHeight)],['Clear length*',formatDimension(dimensions.interiorLength)],['Wheelbase',formatDimension(dimensions.wheelbase)],['Cab L × W × H*',`${dimensions.cabLength} × ${dimensions.cabWidth} × ${dimensions.cabHeight} in`]];
   const list=document.createElement('dl');
   rows.forEach(([name,value])=>{const term=document.createElement('dt');term.textContent=name;const detail=document.createElement('dd');detail.textContent=value;if(name.includes('*'))detail.className='estimate';list.append(term,detail);});
   element('summary').replaceChildren(list);

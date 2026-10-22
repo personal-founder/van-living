@@ -7,15 +7,19 @@ export const fieldDefinitions = [
   ['frontOverhang','Nose to front axle',46,'Estimate'],['tireDiameter','Tire outside diameter',39,'Estimate'],['frontTrack','Front tire center spacing',80,'Estimate'],['rearTrack','Rear dual-pair center spacing',80,'Estimate'],
   ['entryWidth','Entry door nominal width',36,'Published nominal; clear passage is 31 in with one rail or 30 in with two'],['entryHeight','Entry door height',96,'Estimate'],['entrySill','Entry door sill above ground',15.5,'Estimate; first-step reference is 15.5 in'],
   ['driverDoorWidth','Driver door length along cab',38,'Estimate'],['driverDoorHeight','Driver door height',70,'Estimate'],['rearDoorWidth','Optional rear door width',32,'Estimate'],['rearDoorHeight','Optional rear door height',72,'Estimate'],
-  ['windowWidth','Passenger window nominal width',36,'Published nominal; not a cutout or glass order size'],['windowHeight','Passenger window nominal height',36,'Published nominal; not a cutout or glass order size'],['windowSill','Passenger window bottom above floor',38,'Estimate'],['windowGap','Passenger window spacing',4,'Estimate']
+  ['windowWidth','Passenger window nominal width',36,'Published nominal; not a cutout or glass order size'],['windowHeight','Passenger window nominal height',36,'Published nominal; not a cutout or glass order size'],['windowSill','Passenger window bottom above floor',38,'Estimate'],['windowGap','Passenger window spacing',4,'Estimate'],
+  ['firstStepHeight','Ground to first step surface',15.5,'Published'],['stepRise','Intermediate step rise',9.75,'Published; final rise closes to the floor height'],['stepTread','Step tread depth',9.75,'Published'],['stepWidth','Step tread width',35.75,'Published'],['frontBumperBottom','Ground to front bumper bottom',21,'Estimate'],['rearBumperBottom','Ground to rear bumper bottom',24,'Estimate']
 ];
 export function blankDesign() {
-  return {version:2,vehicle:'Starcraft Allstar XL Freightliner · 40 ft / wide body target',dimensions:Object.fromEntries(fieldDefinitions.map(([key,,value])=>[key,value])),visible:{roof:true,left:true,right:true,front:true,rear:true,floor:true,cab:true,wheels:true,dimensions:true,doors:true,windows:true},cutaway:true,items:[],doors:{rear:true,open:false},dimensionMode:'simple',dimensionGroups:{exterior:true,interior:true,cab:false,doors:true,chassis:false,windows:false}};
+  return {version:2,vehicle:'Starcraft Allstar XL Freightliner · 40 ft / wide body target',dimensions:Object.fromEntries(fieldDefinitions.map(([key,,value])=>[key,value])),visible:{roof:true,left:true,right:true,front:true,rear:true,floor:true,cab:true,wheels:true,chassis:true,dimensions:true,doors:true,windows:true},cutaway:false,items:[],doors:{rear:true,open:false},dimensionMode:'simple',dimensionGroups:{exterior:true,interior:true,cab:false,doors:true,chassis:false,windows:false}};
 }
 export function upgradeDesign(design) {
   if(!design||design.version!==2) return design;
   const defaults=blankDesign();
-  return {...design,dimensions:{...defaults.dimensions,...design.dimensions},visible:{...defaults.visible,...design.visible},doors:{...defaults.doors,...design.doors},dimensionMode:design.dimensionMode??defaults.dimensionMode,dimensionGroups:{...defaults.dimensionGroups,...design.dimensionGroups}};
+  const dimensions={...defaults.dimensions,...design.dimensions};
+  if(design.dimensions?.firstStepHeight===undefined) dimensions.firstStepHeight=Math.max(defaults.dimensions.firstStepHeight,dimensions.entrySill);
+  if(design.dimensions?.stepWidth===undefined) dimensions.stepWidth=Math.min(defaults.dimensions.stepWidth,dimensions.entryWidth-0.25);
+  return {...design,dimensions,visible:{...defaults.visible,...design.visible},doors:{...defaults.doors,...design.doors},dimensionMode:design.dimensionMode??defaults.dimensionMode,dimensionGroups:{...defaults.dimensionGroups,...design.dimensionGroups}};
 }
 export function doorLayout(dimensions) {
   return {entry:{start:dimensions.bodyFront+6,width:dimensions.entryWidth,height:dimensions.entryHeight,sill:dimensions.entrySill},driver:{start:dimensions.bodyFront-dimensions.driverDoorWidth-6,width:dimensions.driverDoorWidth,height:dimensions.driverDoorHeight,sill:dimensions.cabFloor},rear:{width:dimensions.rearDoorWidth,height:dimensions.rearDoorHeight,sill:dimensions.floorHeight}};
@@ -41,6 +45,8 @@ export function validateDesign(design) {
   const dimensions=design.dimensions;
   const derived=derivedDimensions(dimensions);
   const doors=doorLayout(dimensions);
+  const stepCount=Math.ceil((dimensions.floorHeight-dimensions.firstStepHeight)/dimensions.stepRise);
+  if(dimensions.firstStepHeight<=1.2||dimensions.firstStepHeight<dimensions.entrySill||dimensions.firstStepHeight>=dimensions.floorHeight||stepCount<1||stepCount>8||stepCount*dimensions.stepTread>=dimensions.width/2-4||dimensions.stepWidth>=dimensions.entryWidth||dimensions.stepWidth<=4||dimensions.frontBumperBottom+8>=dimensions.cabFloor+33||dimensions.rearBumperBottom+8>=dimensions.floorHeight||dimensions.cabFloor<=dimensions.floorHeight-20||dimensions.cabFloor>=dimensions.floorHeight||dimensions.cabWidth>=dimensions.width||Math.min(dimensions.cabFloor-10,dimensions.floorHeight-12)<=dimensions.tireDiameter/2+2) throw new Error('Steps, bumper heights, cab floor and axle supports must fit beneath the vehicle floors.');
   if(dimensions.windowSill+dimensions.windowHeight>=dimensions.interiorHeight||dimensions.windowWidth>dimensions.length-dimensions.bodyFront-16) throw new Error('Passenger windows must fit below the ceiling and within the body.');
   if(dimensions.driverDoorWidth<=8||dimensions.driverDoorHeight<=64||dimensions.cabHeight<=66||dimensions.entryWidth<=8||dimensions.rearDoorWidth<=8||dimensions.rearDoorHeight<=33||windowLayout(dimensions).length>40) throw new Error('Glazing must fit its door and roof; passenger window count must not exceed 40.');
   if(doors.entry.start+doors.entry.width>=derived.rearAxle-dimensions.tireDiameter/2-2||doors.entry.sill>=dimensions.floorHeight||doors.entry.sill+doors.entry.height>=dimensions.floorHeight+dimensions.interiorHeight||doors.driver.start<=derived.cabFront+18||doors.driver.height>=dimensions.cabHeight||doors.rear.width>=dimensions.interiorWidth||doors.rear.height>=dimensions.interiorHeight) throw new Error('Door openings must fit their body/cab panels and clear the rear wheel arch.');
@@ -94,6 +100,14 @@ export function dimensionSegments(design) {
     add('tire','chassis',[side*dimensions.frontTrack/2,0,dimensions.frontOverhang],[side*dimensions.frontTrack/2,dimensions.tireDiameter,dimensions.frontOverhang],dimensions.tireDiameter,'Tire diameter',true);
     add('body-front','chassis',[axleX,0,0],[axleX,0,dimensions.bodyFront],dimensions.bodyFront,'Nose to body',true);
     for(const location of [derived.cabFront,dimensions.bodyFront]) add('cab-floor','chassis',[side*dimensions.cabWidth/2,0,location],[side*dimensions.cabWidth/2,dimensions.cabFloor,location],dimensions.cabFloor,'Cab floor above ground',true);
+    add('front-bumper-ground','chassis',[side*40,0,0],[side*40,dimensions.frontBumperBottom,0],dimensions.frontBumperBottom,'Front bumper bottom',true);
+    add('rear-bumper-ground','chassis',[side*dimensions.width/2,0,dimensions.length],[side*dimensions.width/2,dimensions.rearBumperBottom,dimensions.length],dimensions.rearBumperBottom,'Rear bumper bottom',true);
+  }
+  add('first-step-ground','chassis',[dimensions.width/2,0,doors.entry.start],[dimensions.width/2,dimensions.firstStepHeight,doors.entry.start],dimensions.firstStepHeight,'First step surface',!verified('firstStepHeight'));
+  for(let index=0,level=dimensions.firstStepHeight;level<dimensions.floorHeight;index++,level=dimensions.firstStepHeight+index*dimensions.stepRise) {
+    const next=Math.min(level+dimensions.stepRise,dimensions.floorHeight);
+    const x=dimensions.width/2-(index+1)*dimensions.stepTread;
+    add(`step-rise-${index}`,'chassis',[x,level,doors.entry.start],[x,next,doors.entry.start],next-level,index===Math.ceil((dimensions.floorHeight-dimensions.firstStepHeight)/dimensions.stepRise)-1?'Final rise to floor':'Intermediate step rise',next===dimensions.floorHeight||!verified('stepRise'));
   }
   add('front-track','chassis',[-dimensions.frontTrack/2,dimensions.tireDiameter/2,dimensions.frontOverhang],[dimensions.frontTrack/2,dimensions.tireDiameter/2,dimensions.frontOverhang],dimensions.frontTrack,'Front tire centers',true);
   add('rear-track','chassis',[-dimensions.rearTrack/2,dimensions.tireDiameter/2,derived.rearAxle],[dimensions.rearTrack/2,dimensions.tireDiameter/2,derived.rearAxle],dimensions.rearTrack,'Rear dual-pair centers',true);
@@ -120,8 +134,8 @@ export function dimensionSegments(design) {
   }
   const windshieldBottom=dimensions.cabFloor+40;
   const windshieldTop=dimensions.cabFloor+dimensions.cabHeight;
-  add('windshield-width','windows',[-(dimensions.cabWidth-10)/2,windshieldBottom,derived.cabFront-0.5],[(dimensions.cabWidth-10)/2,windshieldBottom,derived.cabFront-0.5],dimensions.cabWidth-10,'Windshield wide',true);
-  add('windshield-height','windows',[0,windshieldBottom,derived.cabFront-0.5],[0,windshieldTop,derived.cabFront+17.5],Math.hypot(18,dimensions.cabHeight-40),'Windshield slope',true);
+  add('windshield-width','windows',[-(dimensions.cabWidth-10)/2,windshieldBottom,derived.cabFront],[(dimensions.cabWidth-10)/2,windshieldBottom,derived.cabFront],dimensions.cabWidth-10,'Windshield wide',true);
+  add('windshield-height','windows',[0,windshieldBottom,derived.cabFront],[0,windshieldTop,derived.cabFront+18],Math.hypot(18,dimensions.cabHeight-40),'Windshield slope',true);
   return segments;
 }
 export function formatDimension(inches) {

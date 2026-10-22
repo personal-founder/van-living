@@ -1,5 +1,15 @@
 # Van Living · Empty Shuttle Shell
 
+## Ground datum and shell continuity
+
+Tires now contact the visible ground plane at Y = 0. The previous grid was 0.8 inches below the contact datum. The cab floor surface is corrected to its labeled height (34 inches estimated), rather than placing the two-inch floor panel above that height. The passenger floor remains at the published 44 inches.
+
+The stepwell now includes continuous risers, side cheeks and a bottom pan instead of disconnected tread plates. Separate editable published-reference fields define the first step surface (15.5 inches), intermediate rise (9.75), tread depth (9.75), and tread width (35.75). Default treads are at 15.5, 25.25 and 35 inches. The final riser is derived as **9 inches** to close exactly to the 44-inch floor; it is not represented as a manufacturer-confirmed dimension. These brochure values do not arithmetically yield uniform risers all the way to the floor. Door sill height remains a separate estimate.
+
+Added schematic rails, crossmembers, axle shafts, suspension supports, wheel-arch fenders, front fascia, rear bumper and rear valance. These connect the wheels and bumpers visually to a rigid bus chassis, not a trailer. Cab/body shoulder and header panels, windshield pillars and a two-level aisle transition close unintended shell gaps while leaving intended door and glass openings. The geometry is illustrative, not structural design evidence. Front/rear bumper bottom heights are editable estimates of 21/24 inches; the brochure does not publish them or the cab floor/chassis clearances. Chassis-category arrows distinguish published ground-to-floor/first-step references from estimates. New blank shells start with opaque panels; saved cutaway preferences are preserved.
+
+`shell-structure.js` is the shared source for stepwell, connection and chassis box geometry. Tests check tread/riser continuity, closure to the floor, axle centers, envelope bounds, height provenance, invalid input rejection and old-export migration. Ground is one-sided so the Bottom view can still inspect the underside.
+
 ## Cab and glazing correction
 
 The [manufacturer gallery and feature list](https://forestriverbus.com/starcraft/allstar-xl-freightliner) and brochure show a fixed Starview transition window in front of the curbside bus entry. This is not a second truck-style passenger door. The model now cuts an actual aperture for this glass, the driver's door glass, and each passenger window, rather than placing blue rectangles over solid panels. The bus entrance has two framed glazed leaves without opaque backing. Cab close-up buttons expose both sides in either projection. Windows visibility hides glazing while retaining openings and frames.
