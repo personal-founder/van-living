@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Van Living · Empty Shuttle Shell</title>
-  <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?v=2">
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?v=3">
   <script type="importmap">{"imports":{"three":"./three.module.js","three/addons/":"./"}}</script>
 </head>
 <body>
@@ -13,6 +13,8 @@
       <h2>40′ wide-body shuttle</h2><p class="intro">Starcraft Allstar XL · Freightliner target configuration. No model year selected. Empty passenger compartment; original cab and wheels only.</p>
       <p class="notice">Planning reference, not a measured vehicle. Cab, interior length, wheel sizes and axle offsets are estimates. Budget, payload, roof capacity and license eligibility remain unverified for a specific bus.</p>
       <div id="summary"></div>
+      <details open><summary>Dimension labels</summary><label>Dimension filter<select id="dimension-mode" aria-label="Dimension filter"><option value="simple">Simple Dimensions</option><option value="all">All Dimensions</option></select></label><div id="dimension-groups" role="group" aria-label="Dimension categories"></div><p class="hint">Simple shows one arrowed label per distinct measurement. All repeats labels along every edge/corner. Select categories to reduce clutter. Measurements parallel to the camera cannot show an arrow span; switch sides to see them. “est.” means not manufacturer-verified.</p></details>
+      <details open><summary>Factory doors</summary><label class="check"><input id="rear-door" type="checkbox" checked>Optional rear emergency door</label><label class="check"><input id="doors-open" type="checkbox">Open doors</label><p class="hint">Passenger entry: standard 36-inch nominal door; clear passage is 31 inches with one rail or 30 with two. Driver door: chassis reference. Rear emergency door: optional, not guaranteed on a purchased bus. With it off, the standard rear egress window is shown. Driver/rear door sizes and entry height are estimates.</p><p class="hint"><a href="https://forestriverbus.com/starcraft/allstar-xl-freightliner" target="_blank" rel="noopener">Manufacturer door options</a></p></details>
       <details open><summary>Visibility & cutaway</summary><label class="check"><input id="cutaway" type="checkbox" checked>See inside in 3D</label><p class="hint">Cutaway fades the roof and body panels while retaining the complete shell. Turn it off for solid exterior views.</p><div id="layers"></div></details>
       <details><summary>Dimensions · inches</summary><form id="dimensions-form"><div id="dimension-fields"></div><button>Apply dimensions</button></form><p class="hint">Published values are from one brochure configuration; they do not establish the dimensions of older buses for sale. Estimates are editable.</p></details>
       <details><summary>Sources & weight target</summary><p class="hint">Manufacturer reference: <a href="https://forestriverbus.com/brochures/Starcraft-Allstar-XL-Freightliner-Brochure.pdf" target="_blank" rel="noopener">Allstar XL Freightliner specifications</a>. 26,000 / 30,000 lb GVWR variants; Cummins 6.7L, 240 hp in this brochure. Prefer the higher GVWR for the search, subject to an actual scale ticket and axle ratings.</p><p class="hint">200 US gal water ≈ 1,668 lb + 3,000 lb utilities + 500 lb solar = 5,168 lb before walls, storage, tanks, people and belongings. This viewer does not approve payload or roof loading.</p><p class="hint">Utah: <a href="https://le.utah.gov/xcode/Title53/Chapter3/C53-3-P1_1800010118000101.pdf" target="_blank" rel="noopener">53-3-102(7)(b)(iv)</a> exempts personal recreational vehicles from the CDL definition. Gutting alone does not establish motorhome status. <a href="https://dmv.utah.gov/register/vehicles/motor-homes/" target="_blank" rel="noopener">Utah motorhome title and registration</a> still apply; confirm conversion classification with DMV/DLD before purchase or driving it home.</p><p class="hint">The body is an envelope with simplified surfaces. Cab trim, seats, hood, tires, track, wheel arches and underside are schematic. No frame, tank, solar or utility equipment is added.</p></details>
@@ -20,10 +22,10 @@
     </aside>
     <section class="workspace" aria-label="Vehicle shell workspace">
       <nav aria-label="Quick vehicle views"><div class="actions"><button id="mode-2d" aria-pressed="false">2D / orthographic</button><button id="mode-3d" aria-pressed="true">3D / perspective</button><button id="fit">Fit view</button></div><div class="actions" id="view-buttons"><button data-view="overview">3D overview</button><button data-view="top">Top</button><button data-view="bottom">Bottom</button><button data-view="front">Front</button><button data-view="rear">Rear</button><button data-view="left">Left</button><button data-view="right">Right</button></div></nav>
-      <div id="viewport"></div><div class="caption">FRONT = hood · LEFT = driver side · Drag to orbit in 3D · Scroll to zoom · Right-drag to pan</div><div id="status" role="status" aria-live="polite">Loading empty vehicle shell…</div>
+      <div id="viewport"></div><svg id="dimension-overlay" aria-label="Arrowed dimension labels" xmlns="http://www.w3.org/2000/svg"></svg><div class="caption">FRONT = hood · LEFT = driver side · Drag to orbit in 3D · Scroll to zoom · Right-drag to pan</div><div id="status" role="status" aria-live="polite">Loading empty vehicle shell…</div>
     </section>
   </main>
-  <script type="module" src="app.js?v=2"></script>
+  <script type="module" src="app.js?v=3"></script>
   <script>window.addEventListener('error',()=>{document.getElementById('status').textContent='Viewer error. Reload and check that WebGL is enabled.';});</script>
 </body>
 </html>
